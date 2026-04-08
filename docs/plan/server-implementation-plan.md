@@ -229,7 +229,7 @@ Do not:
 
 ### 11. Create GitHub Integration Stubs
 
-- [x] Create GitHub integration module skeleton. Commit: _pending_
+- [x] Create GitHub integration module skeleton. Commit: 4c5b43b
 
 Do:
 
@@ -247,7 +247,7 @@ Do not:
 
 ### 12. Create LLM Integration Stubs
 
-- [ ] Create LLM provider adapter skeleton. Commit: _pending_
+- [x] Create LLM provider adapter skeleton. Commit: _pending_
 
 Do:
 
