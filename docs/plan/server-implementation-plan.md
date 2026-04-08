@@ -316,7 +316,7 @@ Do not:
 
 ### 16. Create Docker Compose Skeleton
 
-- [ ] Create local infra compose skeleton for PostgreSQL, Redis, and RabbitMQ. Commit: _pending_
+- [x] Create local infra compose skeleton for PostgreSQL, Redis, and RabbitMQ. Commit: _pending_
 
 Do:
 
