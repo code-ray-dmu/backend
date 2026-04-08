@@ -200,7 +200,7 @@ Do not:
 
 ### 10. Create Database Lib TypeORM and Entity Stubs
 
-- [ ] Create `libs/database` TypeORM config and entity stubs. Commit: _pending_
+- [x] Create `libs/database` TypeORM config and entity stubs. Commit: 26da378
 
 Do:
 
