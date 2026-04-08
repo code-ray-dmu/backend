@@ -351,7 +351,7 @@ Do not:
 
 ### 18. Verify Skeleton Build
 
-- [ ] Verify type check and build for the skeleton. Commit: _pending_
+- [x] Verify type check and build for the skeleton. Commit: 39420f5
 
 Do:
 
