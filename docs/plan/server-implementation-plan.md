@@ -247,7 +247,7 @@ Do not:
 
 ### 12. Create LLM Integration Stubs
 
-- [x] Create LLM provider adapter skeleton. Commit: _pending_
+- [x] Create LLM provider adapter skeleton. Commit: dd10748
 
 Do:
 
