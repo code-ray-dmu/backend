@@ -50,7 +50,7 @@ Do not:
 
 ### 3. Create API Bootstrap and Common Folders
 
-- [ ] Create `apps/api` entry files and common folder layout. Commit: _pending_
+- [x] Create `apps/api` entry files and common folder layout. Commit: 92bab72
 
 Do:
 
