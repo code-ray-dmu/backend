@@ -285,7 +285,7 @@ Do not:
 
 ### 14. Create Contracts Lib Folders
 
-- [x] Create `libs/contracts` API, queue, and event folders. Commit: _pending_
+- [x] Create `libs/contracts` API, queue, and event folders. Commit: e531181
 
 Do:
 
