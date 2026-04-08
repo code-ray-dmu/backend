@@ -160,7 +160,7 @@ Do not:
 
 ### 8. Create Worker Processor, Job, and Scheduler Stubs
 
-- [ ] Create worker processor/job/scheduler class stubs. Commit: _pending_
+- [x] Create worker processor/job/scheduler class stubs. Commit: 9cdd3dc
 
 Do:
 
