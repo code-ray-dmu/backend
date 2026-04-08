@@ -182,7 +182,7 @@ Do not:
 
 ### 9. Create Core Lib Enums and Folders
 
-- [ ] Create `libs/core` enums and common folder layout. Commit: _pending_
+- [x] Create `libs/core` enums and common folder layout. Commit: b5b54d0
 
 Do:
 
