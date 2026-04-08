@@ -123,7 +123,7 @@ Do not:
 
 ### 6. Create Auth Security Stubs
 
-- [ ] Create basic Auth strategy, guard, and interface files. Commit: _pending_
+- [x] Create basic Auth strategy, guard, and interface files. Commit: 59dc710
 
 Do:
 
