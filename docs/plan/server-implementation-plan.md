@@ -300,7 +300,7 @@ Do not:
 
 ### 15. Create Shared Lib Folders
 
-- [x] Create `libs/shared` support folders. Commit: _pending_
+- [x] Create `libs/shared` support folders. Commit: 6cfd2f9
 
 Do:
 
