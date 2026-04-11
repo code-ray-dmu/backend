@@ -142,28 +142,38 @@ hotfix/TASK-301-login-error
 
 ## 7. Commit Rules
 
-### 7.1 Commit Message Format
+### 7.1 Commit Message
 
 ```text
-[TASK-123] Short description
+[type]: [TASK-123] description
 ```
+
+### Types
+
+* feat: Add a new feature
+* fix: Fix a bug
+* refactor: Refactor code (no functional changes)
+* docs: Documentation changes
+* style: Code style changes (formatting, semicolons, etc.)
+* test: Add or modify tests
+* chore: Build, configuration, dependencies, or other miscellaneous tasks
 
 ### Examples
 
 ```text
-[TASK-101] Add login API
-[TASK-101] Validate access token
-[TASK-205] Fix sync conflict handling
+feat: [TASK-101] Add user login feature
+fix: [TASK-102] Fix token expiration handling bug
+docs: [TASK-103] Update API documentation
+refactor: [TASK-104] Improve authentication logic structure
 ```
 
-### Commit Rules
+### Rules
 
-* One logical purpose per commit
-* Avoid mixing refactor, bug fix, and feature work in a single commit
-* Clean up temporary or noisy AI-generated commits before review when possible
-* Do not push obviously broken intermediate code unless the branch is clearly marked as draft work
-
----
+* Each commit must have a single purpose
+* Do not mix feature, bug fix, and refactoring in one commit
+* The type must be specified
+* TASK number must be included (`[TASK-123]`)
+* Write clear and concise messages
 
 ## 8. Release Strategy
 
