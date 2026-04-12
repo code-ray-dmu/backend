@@ -113,10 +113,10 @@ code-ray-server/
 │        ├─ processors/
 │        │  ├─ analysis-run.processor.ts
 │        │  ├─ github-repository.processor.ts
-│        │  └─ question-generation.processor.ts
+│        │  └─ llm-analysis.processor.ts
 │        ├─ jobs/
 │        │  ├─ analysis-run.job.ts
-│        │  └─ question-generation.job.ts
+│        │  └─ llm-analysis.job.ts
 │        └─ schedulers/
 │           └─ cleanup.scheduler.ts
 │
@@ -311,9 +311,10 @@ applicants/
 
 ### 책임
 
-* 지원자별 실제 분석 대상 GitHub 저장소 관리
-* GitHub URL 정규화
-* 저장소 메타데이터 저장
+* 분석 요청 시 GitHub API로 공개 저장소 목록을 조회하여 내부적으로 `applicant_repositories` 자동 생성
+* 최근 수정 순으로 최대 `MAX_REPO_SELECTION_COUNT`개 선택 (기본값 3)
+* GitHub URL(`https://github.com/{owner}`) 파싱 및 저장소 메타데이터 저장
+* 수동 등록 엔드포인트 미제공
 
 ### 연관 테이블
 
@@ -472,18 +473,19 @@ Worker는 API에서 발행한 메시지를 consume하여 비동기 분석을 수
 
 ---
 
-## 5.3 question-generation.processor.ts
+## 5.3 llm-analysis.processor.ts
 
 ### 책임
 
-* 그룹의 `tech_stacks`, `culture_fit_priority`
-* 저장소 분석 결과
-* 프롬프트 템플릿
-  을 결합해 질문 생성
+* 폴더 구조 기반 핵심 파일 선별 (LLM 호출, `purpose = 'file_selection'`)
+* 핵심 파일 코드 요약 (LLM 호출, `purpose = 'code_summary'`)
+* 그룹 기술 스택 / 컬쳐핏 우선순위 / 코드 분석 결과 / 프롬프트 템플릿을 결합해 면접 질문 생성 (LLM 호출, `purpose = 'question_generation'`)
+* 분석할 핵심 파일 수는 `MAX_ANALYSIS_FILES` 환경변수로 제한
 
 ### 저장 대상
 
 * `llm_messages`
+* `code_analysis`
 * `generated_questions`
 
 ---
@@ -808,65 +810,80 @@ TypeOrmModule.forRootAsync({
 * 지원자 ID
 * 저장소 ID
 
+## 10.1 입력
+
+* 사용자 ID
+* 지원자 ID (github_url 은 프로필 URL 형식만 허용)
+
 ## 10.2 처리 단계
 
-### 1) 분석 실행 생성
+### 1) 분석 요청 수신 (API App)
 
-* `analysis_runs` 레코드 생성
-* 상태 `QUEUED`
-
-### 2) 큐 발행
-
+* GitHub API로 공개 저장소 목록 조회 (최근 수정 순, 최대 `MAX_REPO_SELECTION_COUNT`개)
+* `applicant_repositories` upsert
+* 이미 COMPLETED 상태인 저장소는 건너뜀 (모두 완료된 경우 `ANALYSIS_RUN_ALREADY_COMPLETED` 오류 반환)
+* `analysis_runs` 레코드 생성 (상태 `QUEUED`)
 * RabbitMQ에 분석 요청 메시지 발행
+* `analysisRunIds` 배열 응답 반환
 
-### 3) GitHub 저장소 분석
+### 2) 워커 메시지 소비 (Worker App)
 
-* repo 기본 정보 조회
-* 기본 브랜치 조회
-* 파일 트리 탐색
-* 핵심 파일 추출
-* `repository_files` 저장
+* `analysis-run.processor` 메시지 수신
+* Redis lock 획득 (`analysis:lock:{repositoryId}`, TTL 10분)
+* `analysis_runs.status = IN_PROGRESS`
 
-### 4) 단계별 LLM 메시지 기록
+### 3) GitHub 저장소 정보 조회 (github-repository.processor)
 
-* repo 목록/폴더 구조/파일 내용/요약/질문 생성 요청과 응답 저장
+* `current_stage = REPO_LIST`: repo 기본 정보 조회 및 `applicant_repositories` 업데이트
+* `current_stage = FOLDER_STRUCTURE`: 기본 브랜치 파일 트리 조회
+
+### 4) 핵심 파일 선별 (llm-analysis.processor)
+
+* FOLDER_STRUCTURE 단계에서 LLM 호출 (`purpose = 'file_selection'`)
+* 분석 대상 파일 경로 목록 결정 (최대 `MAX_ANALYSIS_FILES`개)
 * `llm_messages` 저장
 
-### 5) 코드 분석 결과 저장
+### 5) 파일 상세 조회 (github-repository.processor)
 
+* `current_stage = FILE_DETAIL`: 선별된 파일 raw content 조회 (최대 100KB/파일)
+* `repository_files` 저장
+
+### 6) 코드 요약 및 분석 (llm-analysis.processor)
+
+* `current_stage = SUMMARY`: 파일 내용 기반 LLM 코드 요약 호출 (`purpose = 'code_summary'`)
+* `llm_messages` 저장
 * `code_analysis.raw_analysis_report` 저장
 
-### 6) 질문 생성
+### 7) 질문 생성 (llm-analysis.processor)
 
-* 그룹 기술 스택
-* 컬쳐핏 우선순위
-* 코드 분석 결과
-* 활성 prompt template
-  를 사용하여 질문 생성
-
-### 7) 질문 저장
-
+* `current_stage = QUESTION_GENERATION`: 그룹 기술 스택 / 컬쳐핏 / 분석 결과로 LLM 질문 생성 (`purpose = 'question_generation'`)
+* `llm_messages` 저장
 * `generated_questions` 저장
 
 ### 8) 완료 처리
 
 * `analysis_runs.status = COMPLETED`
+* Redis lock 해제
 
 ### 9) 실패 처리
 
 * `analysis_runs.status = FAILED`
 * `failure_reason` 저장
+* Redis lock 해제
+* 최대 2회 재시도 후 dead-letter 큐 이동
 
 ---
 
 # 11. RabbitMQ 메시지 명세
 
-## 11.1 Exchange / Queue 예시
+## 11.1 Exchange / Queue 구성
 
 * Exchange: `code-ray.analysis`
-* Queue: `analysis.run.requested`
-* Queue: `analysis.run.retry`
-* Queue: `question.generation.requested`
+* Queue: `analysis.run.requested` — 분석 요청 메시지 수신
+* Queue: `analysis.run.retry` — 실패 메시지 재시도 (최대 2회)
+* Queue: `analysis.run.deadletter` — 재시도 초과 메시지 격리
+
+> `question.generation.requested` 큐는 사용하지 않는다. 질문 생성은 `analysis-run.processor`가 내부적으로 `llm-analysis.processor`를 호출하여 처리하므로 별도 큐가 필요 없다.
 
 ## 11.2 메시지 payload 예시
 
@@ -882,9 +899,10 @@ TypeOrmModule.forRootAsync({
 
 ## 11.3 실패 정책
 
-* 최대 재시도 횟수 설정
-* 재시도 초과 시 dead-letter queue 이동
+* 최대 재시도 횟수: **2회** (`RABBITMQ_MAX_RETRY=2`)
+* 재시도 초과 시 `analysis.run.deadletter` 큐로 이동
 * 실패 사유는 `analysis_runs.failure_reason`에 반영
+* Redis lock은 실패 시에도 반드시 해제 (finally 블록 처리)
 
 ---
 
@@ -896,12 +914,12 @@ TypeOrmModule.forRootAsync({
 * 분석 중복 실행 방지 락
 * 분석 진행률 임시 저장
 
-## 12.2 캐시 키 예시
+## 12.2 캐시 키 및 TTL
 
-* `github:repo:{repoFullName}`
-* `github:tree:{repoFullName}:{branch}`
-* `analysis:lock:{repositoryId}`
-* `analysis:progress:{analysisRunId}`
+* `github:repo:{repoFullName}` — TTL 1시간 (저장소 기본 정보)
+* `github:tree:{repoFullName}:{branch}` — TTL 30분 (파일 트리)
+* `analysis:lock:{repositoryId}` — TTL **10분** (`ANALYSIS_LOCK_TTL=600`, 파이프라인 최대 실행 시간 기준)
+* `analysis:progress:{analysisRunId}` — TTL 1시간 (분석 진행률 보조 캐시)
 
 ---
 
@@ -913,11 +931,12 @@ TypeOrmModule.forRootAsync({
 
 ## 13.2 책임
 
-* URL 파싱
-* 저장소 정보 조회
-* 트리 조회
-* 파일 content 조회
-* rate limit 대응
+* 프로필 URL(`https://github.com/{owner}`) 파싱 — `{owner}` 추출
+* `GET /users/{owner}/repos` 호출로 공개 저장소 목록 조회 (최근 수정 순)
+* 저장소 기본 정보 조회 (`GET /repos/{owner}/{repo}`)
+* 파일 트리 조회 (`GET /repos/{owner}/{repo}/git/trees/{sha}?recursive=1`)
+* 핵심 파일 raw content 조회 (`GET /repos/{owner}/{repo}/contents/{path}`) — 최대 100KB/파일
+* rate limit 대응 및 404 / private 저장소 예외 구분 처리
 
 ## 13.3 원칙
 
@@ -997,6 +1016,13 @@ GITHUB_TOKEN=your-github-token
 
 LLM_API_KEY=your-llm-api-key
 LLM_MODEL=your-model-name
+
+MAX_REPO_SELECTION_COUNT=3
+MAX_ANALYSIS_FILES=10
+MAX_FILE_SIZE_KB=100
+
+RABBITMQ_MAX_RETRY=2
+ANALYSIS_LOCK_TTL=600
 ```
 
 ## 15.2 validation 대상
@@ -1021,7 +1047,9 @@ LLM_MODEL=your-model-name
 
 ## 16.3 권한
 
-* 그룹 소유자만 그룹/지원자/분석 결과 접근 가능
+* 그룹 소유자만 그룹/지원자 접근 가능 (`groups.user_id === currentUserId`)
+* `analysis_runs` 접근은 `analysis_runs.requested_by_user_id === currentUserId` 기준
+* `prompt_templates`는 내부 운영 전용으로 일반 인증 사용자에게 노출하지 않음
 
 ## 16.4 민감 데이터
 
@@ -1047,12 +1075,18 @@ LLM_MODEL=your-model-name
 
 ## 17.2 주요 예외 코드
 
+HTTP 응답 오류 코드:
+
 * `AUTH_INVALID_CREDENTIALS`
 * `AUTH_REFRESH_TOKEN_REVOKED`
 * `GROUP_NOT_FOUND`
 * `APPLICANT_NOT_FOUND`
 * `REPOSITORY_NOT_FOUND`
 * `ANALYSIS_RUN_NOT_FOUND`
+* `ANALYSIS_RUN_ALREADY_COMPLETED` — 모든 대상 저장소에 COMPLETED run이 존재하여 재분석 거부
+
+파이프라인 `failure_reason` 식별자 (HTTP 응답 코드 아님):
+
 * `GITHUB_REPOSITORY_ACCESS_DENIED`
 * `GITHUB_RATE_LIMIT_EXCEEDED`
 * `LLM_RESPONSE_PARSE_FAILED`
@@ -1095,6 +1129,8 @@ LLM_MODEL=your-model-name
 * `apps/api`, `apps/worker` 생성
 * `libs/core`, `libs/database`, `libs/integrations`, `libs/contracts`, `libs/shared` 생성
 
+---
+
 ## 19.2 필수 패키지
 
 ### 공통
@@ -1127,5 +1163,75 @@ LLM_MODEL=your-model-name
 * `uuid`
 * `dotenv`
 * `joi`
+
+---
+
+# 20. PM2 프로세스 실행 환경
+
+## 20.1 개요
+
+프로덕션 환경에서 PM2를 사용하여 API App과 Worker App을 총 **5개 프로세스**로 실행한다.
+
+* **API App**: 2 instances (HTTP 요청 처리, cluster 모드로 포트 공유)
+* **Worker App**: 3 instances (RabbitMQ 메시지 병렬 소비, fork 모드)
+
+## 20.2 ecosystem.config.js
+
+```js
+module.exports = {
+  apps: [
+    {
+      name: 'code-ray-api',
+      script: 'dist/apps/api/main.js',
+      instances: 2,
+      exec_mode: 'cluster',
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+    },
+    {
+      name: 'code-ray-worker',
+      script: 'dist/apps/worker/main.js',
+      instances: 3,
+      exec_mode: 'fork',
+      watch: false,
+      env: {
+        NODE_ENV: 'production',
+      },
+    },
+  ],
+};
+```
+
+## 20.3 실행 명령
+
+```bash
+# 빌드
+npm run build
+
+# 프로세스 시작
+pm2 start ecosystem.config.js
+
+# 상태 확인
+pm2 list
+
+# 로그 확인
+pm2 logs
+
+# 재시작
+pm2 restart ecosystem.config.js
+
+# 중지
+pm2 stop ecosystem.config.js
+```
+
+## 20.4 주의사항
+
+* Worker App은 `fork` 모드로 실행한다. 각 인스턴스가 독립적으로 RabbitMQ 메시지를 소비하며, HTTP 포트를 공유하지 않는다.
+* API App은 `cluster` 모드로 실행하여 Node.js 단일 스레드 한계를 극복한다. JWT Stateless 설계이므로 세션 공유 없이 동작한다.
+* Redis lock(`analysis:lock:{repositoryId}`, TTL 10분)으로 복수 Worker 인스턴스 환경에서도 동일 저장소의 동시 분석을 방지한다.
+* PM2 log rotation을 설정하여 로그 파일이 무한 증가하지 않도록 관리한다 (`pm2-logrotate` 모듈 사용 권장).
 
 ---
