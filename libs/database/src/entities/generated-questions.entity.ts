@@ -1,5 +1,8 @@
 import { GeneratedQuestionCategory } from '@app/core';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+
+import { AnalysisRunsEntity } from './analysis-runs.entity';
+import { ApplicantsEntity } from './applicants.entity';
 
 @Entity('generated_questions')
 export class GeneratedQuestionsEntity {
@@ -23,4 +26,16 @@ export class GeneratedQuestionsEntity {
 
   @Column({ nullable: true })
   priority?: number;
+
+  @ManyToOne(() => AnalysisRunsEntity, (analysisRun) => analysisRun.generatedQuestions, {
+    nullable: false,
+  })
+  @JoinColumn({ name: 'analysis_run_id' })
+  analysisRun: AnalysisRunsEntity;
+
+  @ManyToOne(() => ApplicantsEntity, (applicant) => applicant.generatedQuestions, {
+    nullable: false,
+  })
+  @JoinColumn({ name: 'applicant_id' })
+  applicant: ApplicantsEntity;
 }

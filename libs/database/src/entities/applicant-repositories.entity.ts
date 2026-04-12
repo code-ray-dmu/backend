@@ -1,6 +1,9 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
+import { AnalysisRunsEntity } from './analysis-runs.entity';
+import { ApplicantsEntity } from './applicants.entity';
 import { BaseTimestampEntity } from './base-timestamp.entity';
+import { RepositoryFilesEntity } from './repository-files.entity';
 
 @Entity('applicant_repositories')
 export class ApplicantRepositoriesEntity extends BaseTimestampEntity {
@@ -21,4 +24,14 @@ export class ApplicantRepositoriesEntity extends BaseTimestampEntity {
 
   @Column({ name: 'default_branch', nullable: true })
   defaultBranch?: string;
+
+  @ManyToOne(() => ApplicantsEntity, (applicant) => applicant.repositories, { nullable: false })
+  @JoinColumn({ name: 'applicant_id' })
+  applicant: ApplicantsEntity;
+
+  @OneToMany(() => RepositoryFilesEntity, (repositoryFile) => repositoryFile.repository)
+  repositoryFiles: RepositoryFilesEntity[];
+
+  @OneToMany(() => AnalysisRunsEntity, (analysisRun) => analysisRun.repository)
+  analysisRuns: AnalysisRunsEntity[];
 }

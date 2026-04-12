@@ -1,6 +1,8 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
+import { ApplicantsEntity } from './applicants.entity';
 import { BaseTimestampEntity } from './base-timestamp.entity';
+import { UsersEntity } from './users.entity';
 
 @Entity('groups')
 export class GroupsEntity extends BaseTimestampEntity {
@@ -21,4 +23,11 @@ export class GroupsEntity extends BaseTimestampEntity {
 
   @Column({ name: 'culture_fit_priority' })
   cultureFitPriority: string;
+
+  @ManyToOne(() => UsersEntity, (user) => user.groups, { nullable: false })
+  @JoinColumn({ name: 'user_id' })
+  user: UsersEntity;
+
+  @OneToMany(() => ApplicantsEntity, (applicant) => applicant.group)
+  applicants: ApplicantsEntity[];
 }

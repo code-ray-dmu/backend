@@ -1,4 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+
+import { UsersEntity } from './users.entity';
 
 @Entity('refresh_tokens')
 export class RefreshTokensEntity {
@@ -16,4 +18,8 @@ export class RefreshTokensEntity {
 
   @Column({ name: 'is_revoked', default: false })
   isRevoked: boolean;
+
+  @ManyToOne(() => UsersEntity, (user) => user.refreshTokens, { nullable: false })
+  @JoinColumn({ name: 'user_id' })
+  user: UsersEntity;
 }
