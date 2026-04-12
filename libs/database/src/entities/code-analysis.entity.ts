@@ -7,24 +7,24 @@ import { BaseTimestampEntity } from './base-timestamp.entity';
 @Entity('code_analysis')
 export class CodeAnalysisEntity extends BaseTimestampEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+    id: string;
 
   @Column({ name: 'analysis_run_id', type: 'uuid' })
-  analysisRunId: string;
+    analysisRunId: string;
 
   @Column({ name: 'applicant_id', type: 'uuid' })
-  applicantId: string;
+    applicantId: string;
 
   @Column({ name: 'raw_analysis_report', type: 'text' })
-  rawAnalysisReport: string;
+    rawAnalysisReport: string;
 
   @OneToOne(() => AnalysisRunsEntity, (analysisRun) => analysisRun.codeAnalysis, {
     nullable: false,
   })
   @JoinColumn({ name: 'analysis_run_id' })
-  analysisRun: AnalysisRunsEntity;
+    analysisRun: AnalysisRunsEntity;
 
   @ManyToOne(() => ApplicantsEntity, (applicant) => applicant.codeAnalyses, { nullable: false })
   @JoinColumn({ name: 'applicant_id' })
-  applicant: ApplicantsEntity;
+    applicant: ApplicantsEntity;
 }

@@ -20,55 +20,55 @@ import { UsersEntity } from './users.entity';
 @Entity('analysis_runs')
 export class AnalysisRunsEntity extends BaseTimestampEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+    id: string;
 
   @Column({ name: 'applicant_id', type: 'uuid' })
-  applicantId: string;
+    applicantId: string;
 
   @Column({ name: 'repository_id', type: 'uuid' })
-  repositoryId: string;
+    repositoryId: string;
 
   @Column({ name: 'requested_by_user_id', type: 'uuid' })
-  requestedByUserId: string;
+    requestedByUserId: string;
 
   @Column({ enum: AnalysisRunStatus, type: 'enum' })
-  status: AnalysisRunStatus;
+    status: AnalysisRunStatus;
 
   @Column({ enum: AnalysisStage, name: 'current_stage', nullable: true, type: 'enum' })
-  currentStage?: AnalysisStage;
+    currentStage?: AnalysisStage;
 
   @Column({ name: 'started_at', nullable: true })
-  startedAt?: Date;
+    startedAt?: Date;
 
   @Column({ name: 'completed_at', nullable: true })
-  completedAt?: Date;
+    completedAt?: Date;
 
   @Column({ name: 'failure_reason', nullable: true })
-  failureReason?: string;
+    failureReason?: string;
 
   @ManyToOne(() => ApplicantsEntity, (applicant) => applicant.analysisRuns, { nullable: false })
   @JoinColumn({ name: 'applicant_id' })
-  applicant: ApplicantsEntity;
+    applicant: ApplicantsEntity;
 
   @ManyToOne(() => ApplicantRepositoriesEntity, (repository) => repository.analysisRuns, {
     nullable: false,
   })
   @JoinColumn({ name: 'repository_id' })
-  repository: ApplicantRepositoriesEntity;
+    repository: ApplicantRepositoriesEntity;
 
   @ManyToOne(() => UsersEntity, (user) => user.requestedAnalysisRuns, { nullable: false })
   @JoinColumn({ name: 'requested_by_user_id' })
-  requestedByUser: UsersEntity;
+    requestedByUser: UsersEntity;
 
   @OneToMany(() => LlmMessagesEntity, (llmMessage) => llmMessage.analysisRun)
-  llmMessages: LlmMessagesEntity[];
+    llmMessages: LlmMessagesEntity[];
 
   @OneToOne(() => CodeAnalysisEntity, (codeAnalysis) => codeAnalysis.analysisRun)
-  codeAnalysis?: CodeAnalysisEntity;
+    codeAnalysis?: CodeAnalysisEntity;
 
   @OneToMany(
     () => GeneratedQuestionsEntity,
     (generatedQuestion) => generatedQuestion.analysisRun,
   )
-  generatedQuestions: GeneratedQuestionsEntity[];
+    generatedQuestions: GeneratedQuestionsEntity[];
 }

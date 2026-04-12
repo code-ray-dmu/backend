@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.createApplicationContext(AppModule);
   app.enableShutdownHooks();
 
@@ -13,4 +13,4 @@ async function bootstrap() {
   Logger.log(`Worker context initialized in ${nodeEnv} mode`, 'WorkerBootstrap');
 }
 
-bootstrap();
+void bootstrap();

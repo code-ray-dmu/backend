@@ -1,4 +1,34 @@
-export default () => ({
+export default (): {
+  nodeEnv: string;
+  port: number;
+  db: {
+    host: string | undefined;
+    port: number;
+    username: string | undefined;
+    password: string | undefined;
+    name: string | undefined;
+  };
+  redis: {
+    host: string | undefined;
+    port: number;
+  };
+  rabbitmq: {
+    url: string | undefined;
+  };
+  jwt: {
+    accessSecret: string | undefined;
+    refreshSecret: string | undefined;
+    accessExpiresIn: string | undefined;
+    refreshExpiresIn: string | undefined;
+  };
+  github: {
+    token: string | undefined;
+  };
+  llm: {
+    apiKey: string | undefined;
+    model: string | undefined;
+  };
+} => ({
   nodeEnv: process.env.NODE_ENV ?? 'local',
   port: parseInt(process.env.PORT ?? '3000', 10),
 

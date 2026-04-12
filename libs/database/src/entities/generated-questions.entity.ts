@@ -7,35 +7,35 @@ import { ApplicantsEntity } from './applicants.entity';
 @Entity('generated_questions')
 export class GeneratedQuestionsEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+    id: string;
 
   @Column({ name: 'analysis_run_id', type: 'uuid' })
-  analysisRunId: string;
+    analysisRunId: string;
 
   @Column({ name: 'applicant_id', type: 'uuid' })
-  applicantId: string;
+    applicantId: string;
 
   @Column({ enum: GeneratedQuestionCategory, type: 'enum' })
-  category: GeneratedQuestionCategory;
+    category: GeneratedQuestionCategory;
 
   @Column({ name: 'question_text', type: 'text' })
-  questionText: string;
+    questionText: string;
 
   @Column({ nullable: true })
-  intent?: string;
+    intent?: string;
 
   @Column({ nullable: true })
-  priority?: number;
+    priority?: number;
 
   @ManyToOne(() => AnalysisRunsEntity, (analysisRun) => analysisRun.generatedQuestions, {
     nullable: false,
   })
   @JoinColumn({ name: 'analysis_run_id' })
-  analysisRun: AnalysisRunsEntity;
+    analysisRun: AnalysisRunsEntity;
 
   @ManyToOne(() => ApplicantsEntity, (applicant) => applicant.generatedQuestions, {
     nullable: false,
   })
   @JoinColumn({ name: 'applicant_id' })
-  applicant: ApplicantsEntity;
+    applicant: ApplicantsEntity;
 }

@@ -5,21 +5,21 @@ import { UsersEntity } from './users.entity';
 @Entity('refresh_tokens')
 export class RefreshTokensEntity {
   @PrimaryGeneratedColumn()
-  id: number;
+    id: number;
 
   @Column({ name: 'user_id', type: 'uuid' })
-  userId: string;
+    userId: string;
 
   @Column({ name: 'token_value' })
-  tokenValue: string;
+    tokenValue: string;
 
   @Column({ name: 'expires_at' })
-  expiresAt: Date;
+    expiresAt: Date;
 
   @Column({ name: 'is_revoked', default: false })
-  isRevoked: boolean;
+    isRevoked: boolean;
 
   @ManyToOne(() => UsersEntity, (user) => user.refreshTokens, { nullable: false })
   @JoinColumn({ name: 'user_id' })
-  user: UsersEntity;
+    user: UsersEntity;
 }

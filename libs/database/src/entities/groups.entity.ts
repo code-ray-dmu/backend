@@ -7,27 +7,27 @@ import { UsersEntity } from './users.entity';
 @Entity('groups')
 export class GroupsEntity extends BaseTimestampEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+    id: string;
 
   @Column({ name: 'user_id', type: 'uuid' })
-  userId: string;
+    userId: string;
 
   @Column()
-  name: string;
+    name: string;
 
   @Column({ nullable: true })
-  description?: string;
+    description?: string;
 
   @Column({ name: 'tech_stacks', type: 'jsonb' })
-  techStacks: Record<string, unknown>;
+    techStacks: Record<string, unknown>;
 
   @Column({ name: 'culture_fit_priority' })
-  cultureFitPriority: string;
+    cultureFitPriority: string;
 
   @ManyToOne(() => UsersEntity, (user) => user.groups, { nullable: false })
   @JoinColumn({ name: 'user_id' })
-  user: UsersEntity;
+    user: UsersEntity;
 
   @OneToMany(() => ApplicantsEntity, (applicant) => applicant.group)
-  applicants: ApplicantsEntity[];
+    applicants: ApplicantsEntity[];
 }

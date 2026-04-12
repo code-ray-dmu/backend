@@ -8,23 +8,23 @@ import { BaseTimestampEntity } from './base-timestamp.entity';
 @Entity('users')
 export class UsersEntity extends BaseTimestampEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+    id: string;
 
   @Column()
-  email: string;
+    email: string;
 
   @Column({ name: 'password_hash' })
-  passwordHash: string;
+    passwordHash: string;
 
   @Column({ nullable: true })
-  name?: string;
+    name?: string;
 
   @OneToMany(() => GroupsEntity, (group) => group.user)
-  groups: GroupsEntity[];
+    groups: GroupsEntity[];
 
   @OneToMany(() => RefreshTokensEntity, (refreshToken) => refreshToken.user)
-  refreshTokens: RefreshTokensEntity[];
+    refreshTokens: RefreshTokensEntity[];
 
   @OneToMany(() => AnalysisRunsEntity, (analysisRun) => analysisRun.requestedByUser)
-  requestedAnalysisRuns: AnalysisRunsEntity[];
+    requestedAnalysisRuns: AnalysisRunsEntity[];
 }

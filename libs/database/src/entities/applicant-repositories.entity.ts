@@ -8,30 +8,30 @@ import { RepositoryFilesEntity } from './repository-files.entity';
 @Entity('applicant_repositories')
 export class ApplicantRepositoriesEntity extends BaseTimestampEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+    id: string;
 
   @Column({ name: 'applicant_id', type: 'uuid' })
-  applicantId: string;
+    applicantId: string;
 
   @Column({ name: 'repo_name' })
-  repoName: string;
+    repoName: string;
 
   @Column({ name: 'repo_full_name' })
-  repoFullName: string;
+    repoFullName: string;
 
   @Column({ name: 'repo_url' })
-  repoUrl: string;
+    repoUrl: string;
 
   @Column({ name: 'default_branch', nullable: true })
-  defaultBranch?: string;
+    defaultBranch?: string;
 
   @ManyToOne(() => ApplicantsEntity, (applicant) => applicant.repositories, { nullable: false })
   @JoinColumn({ name: 'applicant_id' })
-  applicant: ApplicantsEntity;
+    applicant: ApplicantsEntity;
 
   @OneToMany(() => RepositoryFilesEntity, (repositoryFile) => repositoryFile.repository)
-  repositoryFiles: RepositoryFilesEntity[];
+    repositoryFiles: RepositoryFilesEntity[];
 
   @OneToMany(() => AnalysisRunsEntity, (analysisRun) => analysisRun.repository)
-  analysisRuns: AnalysisRunsEntity[];
+    analysisRuns: AnalysisRunsEntity[];
 }

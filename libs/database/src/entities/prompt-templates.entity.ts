@@ -5,26 +5,26 @@ import { BaseTimestampEntity } from './base-timestamp.entity';
 @Entity('prompt_templates')
 export class PromptTemplatesEntity extends BaseTimestampEntity {
   @PrimaryGeneratedColumn()
-  id: number;
+    id: number;
 
   @Column({ name: 'template_key' })
-  templateKey: string;
+    templateKey: string;
 
   @Column({ name: 'template_name' })
-  templateName: string;
+    templateName: string;
 
   @Column()
-  purpose: string;
+    purpose: string;
 
   @Column({ name: 'template_text', type: 'text' })
-  templateText: string;
+    templateText: string;
 
   @Column({ name: 'variables_json', nullable: true, type: 'jsonb' })
-  variablesJson?: Record<string, unknown>;
+    variablesJson?: Record<string, unknown>;
 
   @Column()
-  version: number;
+    version: number;
 
   @Column({ name: 'is_active', default: true })
-  isActive: boolean;
+    isActive: boolean;
 }

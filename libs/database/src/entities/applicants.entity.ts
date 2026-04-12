@@ -10,33 +10,33 @@ import { GroupsEntity } from './groups.entity';
 @Entity('applicants')
 export class ApplicantsEntity extends BaseTimestampEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+    id: string;
 
   @Column({ name: 'group_id', type: 'uuid' })
-  groupId: string;
+    groupId: string;
 
   @Column()
-  name: string;
+    name: string;
 
   @Column()
-  email: string;
+    email: string;
 
   @Column({ name: 'github_url' })
-  githubUrl: string;
+    githubUrl: string;
 
   @ManyToOne(() => GroupsEntity, (group) => group.applicants, { nullable: false })
   @JoinColumn({ name: 'group_id' })
-  group: GroupsEntity;
+    group: GroupsEntity;
 
   @OneToMany(() => ApplicantRepositoriesEntity, (repository) => repository.applicant)
-  repositories: ApplicantRepositoriesEntity[];
+    repositories: ApplicantRepositoriesEntity[];
 
   @OneToMany(() => AnalysisRunsEntity, (analysisRun) => analysisRun.applicant)
-  analysisRuns: AnalysisRunsEntity[];
+    analysisRuns: AnalysisRunsEntity[];
 
   @OneToMany(() => GeneratedQuestionsEntity, (generatedQuestion) => generatedQuestion.applicant)
-  generatedQuestions: GeneratedQuestionsEntity[];
+    generatedQuestions: GeneratedQuestionsEntity[];
 
   @OneToMany(() => CodeAnalysisEntity, (codeAnalysis) => codeAnalysis.applicant)
-  codeAnalyses: CodeAnalysisEntity[];
+    codeAnalyses: CodeAnalysisEntity[];
 }
