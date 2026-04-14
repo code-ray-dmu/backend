@@ -298,6 +298,7 @@ refresh token으로 access token을 재발급한다.
 
 * `data`: object
   * `access_token`: string
+  * `refresh_token`: string
 * `meta`: object
   * `request_id`: string
 * `error`: null
@@ -307,7 +308,8 @@ refresh token으로 access token을 재발급한다.
 ```json
 {
   "data": {
-    "access_token": "new-jwt-access-token"
+    "access_token": "new-jwt-access-token",
+    "refresh_token": "new-refresh-token"
   },
   "meta": {
     "request_id": "6f1d7e14-6d74-4c74-97b1-6ef7a7df0003"
@@ -1172,7 +1174,7 @@ refresh token으로 access token을 재발급한다.
 
 * `data`: object
   * `success`: boolean
-  * `analysis_run_ids`: string[] — 생성된 분석 실행 ID 목록 (저장소당 1개)
+  * `analysisRunIds`: string[] — 생성된 분석 실행 ID 목록 (저장소당 1개)
 * `meta`: object
   * `request_id`: string
 * `error`: null
@@ -1183,7 +1185,7 @@ refresh token으로 access token을 재발급한다.
 {
   "data": {
     "success": true,
-    "analysis_run_ids": [
+    "analysisRunIds": [
       "550e8400-e29b-41d4-a716-446655440040",
       "550e8400-e29b-41d4-a716-446655440041"
     ]
@@ -1223,274 +1225,6 @@ refresh token으로 access token을 재발급한다.
 
 ---
 
-## 10. GET /applicants/{applicantId}/questions
-
-### Base URL
-`/v1`
-
-### 목적
-특정 지원자 기준으로 생성된 면접 질문 목록을 조회한다.
-기본 정렬은 `priority asc`이며, `sort`/`order`로 변경할 수 있다.
-
----
-
-### Request
-
-#### Path Parameter
-- `applicantId`: string (required)
-  - 지원자 ID
-
-#### Query Parameter
-- `page`: number | null (optional)
-  - 페이지 번호
-- `size`: number | null (optional)
-  - 페이지 크기
-- `sort`: string | null (optional)
-  - 정렬 필드 (`priority` 또는 `createdAt`, 기본값 `priority`)
-- `order`: string | null (optional)
-  - `asc` 또는 `desc` (기본값 `asc`)
-
-#### Body (JSON)
-없음
-
----
-
-### Request Example
-
-```json
-{}
-```
-
----
-
-### Response
-
-#### Success Response
-
-##### 구조
-
-* `data`: array
-  * `question_id`: string
-  * `analysis_run_id`: string
-  * `category`: string
-  * `question_text`: string
-  * `intent`: string | null
-  * `priority`: number | null
-* `meta`: object
-  * `page`: number
-  * `size`: number
-  * `total`: number
-  * `request_id`: string
-* `error`: null
-
-##### Example
-
-```json
-{
-  "data": [
-    {
-      "question_id": "550e8400-e29b-41d4-a716-446655440081",
-      "analysis_run_id": "550e8400-e29b-41d4-a716-446655440040",
-      "category": "SKILL",
-      "question_text": "What trade-off did you make in this implementation?",
-      "intent": "Understand technical decision making",
-      "priority": 1
-    }
-  ],
-  "meta": {
-    "page": 1,
-    "size": 10,
-    "total": 1,
-    "request_id": "6f1d7e14-6d74-4c74-97b1-6ef7a7df0081"
-  },
-  "error": null
-}
-```
-
-#### Error Response
-
-##### 구조
-
-* `data`: null
-* `meta`: object
-  * `request_id`: string
-* `error`: object
-  * `code`: string
-  * `message`: string
-
-##### Example
-
-```json
-{
-  "data": null,
-  "meta": {
-    "request_id": "6f1d7e14-6d74-4c74-97b1-6ef7a7df0081"
-  },
-  "error": {
-    "code": "APPLICANT_NOT_FOUND",
-    "message": "Applicant not found"
-  }
-}
-```
-
----
-
-## 11. GET /applicants/{applicantId}/github-repos
-
-### Base URL
-`/v1`
-
-### 목적
-지원자의 GitHub 프로필 URL 기준으로 공개 저장소 목록을 조회한다. 분석 요청 전 대상 저장소를 확인하는 용도로 사용한다. (Read-only, GitHub API 실시간 조회)
-
----
-
-### Request
-
-#### Path Parameter
-- `applicantId`: string (required)
-  - 지원자 ID
-
-#### Query Parameter
-없음
-
-#### Body (JSON)
-없음
-
----
-
-### Request Example
-
-```json
-{}
-```
-
----
-
-### Response
-
-#### Success Response
-
-##### 구조
-
-* `data`: array
-  * `repo_name`: string
-  * `repo_full_name`: string
-  * `repo_url`: string
-  * `default_branch`: string
-  * `updated_at`: string (ISO 8601)
-* `meta`: object
-  * `request_id`: string
-* `error`: null
-
-##### Example
-
-```json
-{
-  "data": [
-    {
-      "repo_name": "my-project",
-      "repo_full_name": "user/my-project",
-      "repo_url": "https://github.com/user/my-project",
-      "default_branch": "main",
-      "updated_at": "2026-04-01T12:00:00Z"
-    }
-  ],
-  "meta": {
-    "request_id": "6f1d7e14-6d74-4c74-97b1-6ef7a7df0090"
-  },
-  "error": null
-}
-```
-
-#### Error Response
-
-##### Example
-
-```json
-{
-  "data": null,
-  "meta": {
-    "request_id": "6f1d7e14-6d74-4c74-97b1-6ef7a7df0090"
-  },
-  "error": {
-    "code": "APPLICANT_NOT_FOUND",
-    "message": "Applicant not found"
-  }
-}
-```
-
----
-
-## 12. GET /applicants/{applicantId}/repositories
-
-### Base URL
-`/v1`
-
-### 목적
-분석 요청 시 내부적으로 생성된 지원자의 `applicant_repositories` 목록을 조회한다.
-
----
-
-### Request
-
-#### Path Parameter
-- `applicantId`: string (required)
-  - 지원자 ID
-
-#### Query Parameter
-없음
-
-#### Body (JSON)
-없음
-
----
-
-### Request Example
-
-```json
-{}
-```
-
----
-
-### Response
-
-#### Success Response
-
-##### 구조
-
-* `data`: array
-  * `id`: string
-  * `repo_name`: string
-  * `repo_full_name`: string
-  * `repo_url`: string
-  * `default_branch`: string
-  * `created_at`: string (ISO 8601)
-* `meta`: object
-  * `request_id`: string
-* `error`: null
-
-##### Example
-
-```json
-{
-  "data": [
-    {
-      "id": "550e8400-e29b-41d4-a716-446655440030",
-      "repo_name": "my-project",
-      "repo_full_name": "user/my-project",
-      "repo_url": "https://github.com/user/my-project",
-      "default_branch": "main",
-      "created_at": "2026-04-08T10:00:00Z"
-    }
-  ],
-  "meta": {
-    "request_id": "6f1d7e14-6d74-4c74-97b1-6ef7a7df0091"
-  },
-  "error": null
-}
-```
 
 #### Error Response
 

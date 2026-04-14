@@ -1,4 +1,7 @@
 export interface AnalysisRequestPayload {
   analysisRunId: string;
-  applicantRepositoryId?: string;
+  applicantId: string;
+  repositoryId: string;
+  requestedByUserId: string;
+  requestedAt: string;
 }

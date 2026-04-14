@@ -2,17 +2,14 @@ import 'reflect-metadata';
 
 import { MODULE_METADATA } from '@nestjs/common/constants';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { GitHubModule } from '@app/integrations';
 import { AnalysisRunsModule } from '../analysis-runs/analysis-runs.module';
 import { AuthModule } from '../auth/auth.module';
-import { GeneratedQuestionsModule } from '../generated-questions/generated-questions.module';
 import { GroupsModule } from '../groups/groups.module';
-import { ApplicantGithubReposService } from './applicant-github-repos.service';
 import { ApplicantsController } from './applicants.controller';
 import { ApplicantsFacade } from './applicants.facade';
 import { ApplicantsModule } from './applicants.module';
-import { ApplicantsService } from './applicants.service';
 import { ApplicantsRepository } from './repositories/applicants.repository';
+import { ApplicantsService } from './applicants.service';
 
 describe('ApplicantsModule', () => {
   it('wires applicants dependencies for later tasks', (): void => {
@@ -46,13 +43,10 @@ describe('ApplicantsModule', () => {
         AuthModule,
         GroupsModule,
         AnalysisRunsModule,
-        GeneratedQuestionsModule,
-        GitHubModule,
       ]),
     );
     expect(providers).toEqual(
       expect.arrayContaining([
-        ApplicantGithubReposService,
         ApplicantsService,
         ApplicantsFacade,
         ApplicantsRepository,
@@ -61,7 +55,6 @@ describe('ApplicantsModule', () => {
     expect(controllers).toEqual(expect.arrayContaining([ApplicantsController]));
     expect(exportsMetadata).toEqual(
       expect.arrayContaining([
-        ApplicantGithubReposService,
         ApplicantsService,
         ApplicantsFacade,
         ApplicantsRepository,

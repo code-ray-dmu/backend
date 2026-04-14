@@ -7,7 +7,7 @@ import {
   INTERCEPTORS_METADATA,
 } from '@nestjs/common/constants';
 import { ArgumentsHost } from '@nestjs/common/interfaces';
-import { of, lastValueFrom } from 'rxjs';
+import { lastValueFrom, of } from 'rxjs';
 import { ApiExceptionFilter } from '../../common/filters';
 import { ApiResponseEnvelopeInterceptor } from '../../common/interceptors';
 import {
@@ -15,11 +15,7 @@ import {
   GroupNotFoundException,
 } from '../../common/exceptions';
 import { JwtAuthGuard } from '../auth/guards';
-import {
-  CreateApplicantDto,
-  GetApplicantQuestionsQueryDto,
-  GetApplicantsQueryDto,
-} from './dto';
+import { CreateApplicantDto, GetApplicantsQueryDto } from './dto';
 import { ApplicantsController } from './applicants.controller';
 import { ApplicantsFacade } from './applicants.facade';
 
@@ -34,9 +30,7 @@ describe('ApplicantsController', () => {
       createApplicant: jest.fn(),
       getApplicants: jest.fn(),
       getApplicant: jest.fn(),
-      getGithubRepos: jest.fn(),
-      createQuestions: jest.fn(),
-      getQuestions: jest.fn(),
+      requestQuestions: jest.fn(),
     } as unknown as jest.Mocked<ApplicantsFacade>;
 
     controller = new ApplicantsController(facade);
@@ -151,95 +145,27 @@ describe('ApplicantsController', () => {
     });
   });
 
-  it('returns an enveloped body for GET /applicants/:applicantId/github-repos', async (): Promise<void> => {
-    facade.getGithubRepos.mockResolvedValue([
-      {
-        repo_name: 'repo-1',
-        repo_full_name: 'example-user/repo-1',
-        repo_url: 'https://github.com/example-user/repo-1',
-        default_branch: 'main',
-        updated_at: '2026-04-08T15:00:00.000Z',
-      },
-    ]);
-
-    await expect(controller.getGithubRepos('user-1', 'applicant-1')).resolves.toEqual({
-      __apiSuccessBody: true,
-      data: [
-        {
-          repo_name: 'repo-1',
-          repo_full_name: 'example-user/repo-1',
-          repo_url: 'https://github.com/example-user/repo-1',
-          default_branch: 'main',
-          updated_at: '2026-04-08T15:00:00.000Z',
-        },
-      ],
-      meta: undefined,
-    });
-
-    expect(facade.getGithubRepos).toHaveBeenCalledWith('applicant-1', 'user-1');
-  });
-
   it('returns an enveloped body for POST /applicants/:applicantId/questions', async (): Promise<void> => {
-    facade.createQuestions.mockResolvedValue({
+    facade.requestQuestions.mockResolvedValue({
       success: true,
-      analysis_run_ids: ['run-1', 'run-2'],
+      analysisRunIds: ['run-1', 'run-2'],
     });
 
-    await expect(controller.createQuestions('user-1', 'applicant-1')).resolves.toEqual({
+    await expect(
+      controller.requestQuestions('user-1', '550e8400-e29b-41d4-a716-446655440010'),
+    ).resolves.toEqual({
       __apiSuccessBody: true,
       data: {
         success: true,
-        analysis_run_ids: ['run-1', 'run-2'],
+        analysisRunIds: ['run-1', 'run-2'],
       },
       meta: undefined,
     });
 
-    expect(facade.createQuestions).toHaveBeenCalledWith('applicant-1', 'user-1');
-  });
-
-  it('returns an enveloped body for GET /applicants/:applicantId/questions with pagination meta', async (): Promise<void> => {
-    const query = new GetApplicantQuestionsQueryDto();
-    query.page = 1;
-    query.size = 10;
-    query.sort = 'priority';
-    query.order = 'asc';
-
-    facade.getQuestions.mockResolvedValue({
-      items: [
-        {
-          question_id: 'question-1',
-          analysis_run_id: 'run-1',
-          category: 'SKILL',
-          question_text: 'What did you optimize here?',
-          intent: 'Understand reasoning',
-          priority: 1,
-        },
-      ],
-      total: 1,
-      page: 1,
-      size: 10,
-    });
-
-    await expect(controller.getQuestions('user-1', 'applicant-1', query)).resolves.toEqual({
-      __apiSuccessBody: true,
-      data: [
-        {
-          question_id: 'question-1',
-          analysis_run_id: 'run-1',
-          category: 'SKILL',
-          question_text: 'What did you optimize here?',
-          intent: 'Understand reasoning',
-          priority: 1,
-        },
-      ],
-      meta: {
-        page: 1,
-        size: 10,
-        total: 1,
-      },
-    });
-
-    expect(facade.getQuestions).toHaveBeenCalledWith('applicant-1', 'user-1', query);
+    expect(facade.requestQuestions).toHaveBeenCalledWith(
+      '550e8400-e29b-41d4-a716-446655440010',
+      'user-1',
+    );
   });
 
   it('produces the final success envelope through the response interceptor', async (): Promise<void> => {
@@ -259,7 +185,10 @@ describe('ApplicantsController', () => {
             of({
               __apiSuccessBody: true as const,
               data: {
-                applicant_id: 'applicant-1',
+                ok: true,
+              },
+              meta: {
+                page: 1,
               },
             }),
         },
@@ -268,55 +197,100 @@ describe('ApplicantsController', () => {
 
     expect(result).toEqual({
       data: {
-        applicant_id: 'applicant-1',
+        ok: true,
       },
       meta: {
+        page: 1,
         request_id: 'request-1',
       },
       error: null,
     });
   });
 
-  it.each([
-    [new GroupNotFoundException(), 404, 'GROUP_NOT_FOUND'],
-    [new ApplicantNotFoundException(), 404, 'APPLICANT_NOT_FOUND'],
-    [new ForbiddenException(), 403, 'FORBIDDEN_RESOURCE_ACCESS'],
-  ])(
-    'renders %p through the API exception filter contract',
-    (exception, expectedStatus, expectedCode): void => {
-      const filter = new ApiExceptionFilter();
-
-      filter.catch(
-        exception,
-        {
-          switchToHttp: (): {
-            getResponse: () => { status: jest.Mock; json: jest.Mock };
-            getRequest: () => Record<string, unknown>;
-          } => ({
-            getResponse: () => ({
-              status: responseStatus,
-              json: responseJson,
-            }),
-            getRequest: () => ({
-              method: 'GET',
-              url: '/v1/applicants',
-            }),
-          }),
-        } as ArgumentsHost,
-      );
-
-      expect(responseStatus).toHaveBeenCalledWith(expectedStatus);
-      expect(responseJson).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: null,
-          meta: expect.objectContaining({
-            request_id: expect.any(String),
-          }),
-          error: expect.objectContaining({
-            code: expectedCode,
-          }),
+  it('maps applicant and group exceptions through the API filter', (): void => {
+    const filter = new ApiExceptionFilter();
+    const host = {
+      switchToHttp: (): {
+        getResponse: () => { status: jest.Mock; json: jest.Mock };
+        getRequest: () => { requestId: string };
+      } => ({
+        getResponse: () => ({
+          status: responseStatus,
+          json: responseJson,
         }),
-      );
-    },
-  );
+        getRequest: () => ({
+          requestId: 'request-1',
+        }),
+      }),
+    } as unknown as ArgumentsHost;
+
+    filter.catch(new ApplicantNotFoundException(), host);
+
+    expect(responseStatus).toHaveBeenCalledWith(404);
+    expect(responseJson).toHaveBeenCalledWith({
+      data: null,
+      meta: {
+        request_id: 'request-1',
+      },
+      error: {
+        code: 'APPLICANT_NOT_FOUND',
+        message: 'Applicant not found',
+      },
+    });
+
+    responseStatus.mockClear();
+    responseJson.mockClear();
+
+    filter.catch(new GroupNotFoundException(), host);
+
+    expect(responseStatus).toHaveBeenCalledWith(404);
+    expect(responseJson).toHaveBeenCalledWith({
+      data: null,
+      meta: {
+        request_id: 'request-1',
+      },
+      error: {
+        code: 'GROUP_NOT_FOUND',
+        message: 'Group not found',
+      },
+    });
+  });
+
+  it('maps forbidden exceptions through the API filter', (): void => {
+    const filter = new ApiExceptionFilter();
+    const host = {
+      switchToHttp: (): {
+        getResponse: () => { status: jest.Mock; json: jest.Mock };
+        getRequest: () => { requestId: string };
+      } => ({
+        getResponse: () => ({
+          status: responseStatus,
+          json: responseJson,
+        }),
+        getRequest: () => ({
+          requestId: 'request-1',
+        }),
+      }),
+    } as unknown as ArgumentsHost;
+
+    filter.catch(
+      new ForbiddenException({
+        code: 'FORBIDDEN_RESOURCE_ACCESS',
+        message: 'You do not have access to this resource',
+      }),
+      host,
+    );
+
+    expect(responseStatus).toHaveBeenCalledWith(403);
+    expect(responseJson).toHaveBeenCalledWith({
+      data: null,
+      meta: {
+        request_id: 'request-1',
+      },
+      error: {
+        code: 'FORBIDDEN_RESOURCE_ACCESS',
+        message: 'Forbidden resource access',
+      },
+    });
+  });
 });

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   UseFilters,
@@ -12,19 +13,15 @@ import {
 import { ApiSuccessBody, createApiSuccessBody } from '../../common/dto';
 import { ApiExceptionFilter } from '../../common/filters';
 import { ApiResponseEnvelopeInterceptor } from '../../common/interceptors';
+import { CreateAnalysisRunsResponseDto } from '../analysis-runs/dto';
 import { JwtAuthGuard } from '../auth/guards';
 import { CurrentUserId } from '../groups/decorators/current-user-id.decorator';
 import {
   ApplicantDetailDto,
-  ApplicantGithubRepositoryDto,
   ApplicantListItemDto,
-  ApplicantQuestionListItemDto,
-  ApplicantQuestionsPageResultDto,
   ApplicantsPageResultDto,
   CreateApplicantDto,
-  CreateApplicantQuestionsResultDto,
   CreateApplicantResultDto,
-  GetApplicantQuestionsQueryDto,
   GetApplicantsQueryDto,
 } from './dto';
 import { ApplicantsFacade } from './applicants.facade';
@@ -63,52 +60,20 @@ export class ApplicantsController {
   @Get(':applicantId')
   async getApplicant(
     @CurrentUserId() userId: string,
-    @Param('applicantId') applicantId: string,
+    @Param('applicantId', new ParseUUIDPipe()) applicantId: string,
   ): Promise<ApiSuccessBody<ApplicantDetailDto>> {
     const applicant = await this.applicantsFacade.getApplicant(applicantId, userId);
 
     return createApiSuccessBody(applicant);
   }
 
-  @Get(':applicantId/github-repos')
-  async getGithubRepos(
-    @CurrentUserId() userId: string,
-    @Param('applicantId') applicantId: string,
-  ): Promise<ApiSuccessBody<ApplicantGithubRepositoryDto[]>> {
-    const repositories = await this.applicantsFacade.getGithubRepos(applicantId, userId);
-
-    return createApiSuccessBody(repositories);
-  }
-
   @Post(':applicantId/questions')
-  async createQuestions(
+  async requestQuestions(
     @CurrentUserId() userId: string,
-    @Param('applicantId') applicantId: string,
-  ): Promise<ApiSuccessBody<CreateApplicantQuestionsResultDto>> {
-    const result: CreateApplicantQuestionsResultDto = await this.applicantsFacade.createQuestions(
-      applicantId,
-      userId,
-    );
+    @Param('applicantId', new ParseUUIDPipe()) applicantId: string,
+  ): Promise<ApiSuccessBody<CreateAnalysisRunsResponseDto>> {
+    const result = await this.applicantsFacade.requestQuestions(applicantId, userId);
 
     return createApiSuccessBody(result);
-  }
-
-  @Get(':applicantId/questions')
-  async getQuestions(
-    @CurrentUserId() userId: string,
-    @Param('applicantId') applicantId: string,
-    @Query() query: GetApplicantQuestionsQueryDto,
-  ): Promise<ApiSuccessBody<ApplicantQuestionListItemDto[]>> {
-    const result: ApplicantQuestionsPageResultDto = await this.applicantsFacade.getQuestions(
-      applicantId,
-      userId,
-      query,
-    );
-
-    return createApiSuccessBody(result.items, {
-      page: result.page,
-      size: result.size,
-      total: result.total,
-    });
   }
 }

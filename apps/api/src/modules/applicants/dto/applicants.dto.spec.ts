@@ -2,7 +2,6 @@ import 'reflect-metadata';
 
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { GetApplicantQuestionsQueryDto } from './applicant-parent-route.dto';
 import {
   ApplicantDetailDto,
   ApplicantsListResult,
@@ -115,15 +114,6 @@ describe('Applicants DTO validation', () => {
     const errors = await validate(dto);
 
     expect(errors.some((error) => error.property === 'sort')).toBe(true);
-  });
-
-  it('applies default pagination and sorting values for GET /applicants/:id/questions', (): void => {
-    const dto = plainToInstance(GetApplicantQuestionsQueryDto, {});
-
-    expect(dto.page).toBe(1);
-    expect(dto.size).toBe(10);
-    expect(dto.sort).toBe('priority');
-    expect(dto.order).toBe('asc');
   });
 
   it('maps applicant entities to response dto shapes', (): void => {

@@ -13,6 +13,7 @@ export default (): {
   };
   rabbitmq: {
     url: string | undefined;
+    maxRetry: number;
   };
   github: {
     token: string | undefined;
@@ -20,6 +21,13 @@ export default (): {
   llm: {
     apiKey: string | undefined;
     model: string | undefined;
+    maxRetries: number;
+    timeoutMs: number;
+  };
+  analysis: {
+    lockTtl: number;
+    maxAnalysisFiles: number;
+    maxQuestionsPerAnalysisRun: number;
   };
 } => ({
   nodeEnv: process.env.NODE_ENV ?? 'local',
@@ -39,6 +47,7 @@ export default (): {
 
   rabbitmq: {
     url: process.env.RABBITMQ_URL,
+    maxRetry: parseInt(process.env.RABBITMQ_MAX_RETRY ?? '2', 10),
   },
 
   github: {
@@ -48,5 +57,16 @@ export default (): {
   llm: {
     apiKey: process.env.LLM_API_KEY,
     model: process.env.LLM_MODEL,
+    maxRetries: parseInt(process.env.LLM_MAX_RETRIES ?? '2', 10),
+    timeoutMs: parseInt(process.env.LLM_TIMEOUT_MS ?? '30000', 10),
+  },
+
+  analysis: {
+    lockTtl: parseInt(process.env.ANALYSIS_LOCK_TTL ?? '600', 10),
+    maxAnalysisFiles: parseInt(process.env.MAX_ANALYSIS_FILES ?? '10', 10),
+    maxQuestionsPerAnalysisRun: parseInt(
+      process.env.MAX_QUESTIONS_PER_ANALYSIS_RUN ?? '3',
+      10,
+    ),
   },
 });
