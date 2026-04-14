@@ -298,6 +298,7 @@ refresh token으로 access token을 재발급한다.
 
 * `data`: object
   * `access_token`: string
+  * `refresh_token`: string
 * `meta`: object
   * `request_id`: string
 * `error`: null
@@ -307,7 +308,8 @@ refresh token으로 access token을 재발급한다.
 ```json
 {
   "data": {
-    "access_token": "new-jwt-access-token"
+    "access_token": "new-jwt-access-token",
+    "refresh_token": "new-refresh-token"
   },
   "meta": {
     "request_id": "6f1d7e14-6d74-4c74-97b1-6ef7a7df0003"
