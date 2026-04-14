@@ -30,8 +30,10 @@ export const envValidationSchema = Joi.object({
 
   GITHUB_TOKEN: Joi.string().required(),
 
-  LLM_API_KEY: Joi.string().required(),
-  LLM_MODEL: Joi.string().required(),
+  LLM_API_KEY: Joi.string().optional(),
+  LLM_MODEL: Joi.string().optional(),
+  LLM_MAX_RETRIES: Joi.number().integer().min(0).max(10).optional(),
+  LLM_TIMEOUT_MS: Joi.number().integer().min(1000).max(120000).optional(),
 
   MAX_REPO_SELECTION_COUNT: Joi.number().integer().min(1).default(3),
   ANALYSIS_LOCK_TTL: Joi.number().integer().min(1).default(600),
