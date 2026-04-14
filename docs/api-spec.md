@@ -667,7 +667,7 @@ refresh token으로 access token을 재발급한다.
 - `email`: string (required)
   - 지원자 이메일
 - `githubUrl`: string (required)
-  - GitHub 프로필 URL (`https://github.com/{owner}` 형식만 허용. 개별 저장소 URL 불가)
+  - GitHub 프로필 URL (`https://github.com/{owner}` 형식만 허용. 개별 저장소 URL 및 trailing slash 불가)
 
 ---
 
@@ -760,6 +760,10 @@ refresh token으로 access token을 재발급한다.
   - 페이지 번호
 - `size`: number | null (optional)
   - 페이지 크기
+- `sort`: string | null (optional)
+  - 정렬 필드 (`createdAt` 또는 `name`, 기본값 `createdAt`)
+- `order`: string | null (optional)
+  - 정렬 방향 (`asc` 또는 `desc`, 기본값 `desc`)
 
 #### Body (JSON)
 없음
@@ -781,7 +785,12 @@ refresh token으로 access token을 재발급한다.
 ##### 구조
 
 * `data`: array
-  * 지원자 목록
+  * `applicant_id`: string
+  * `group_id`: string
+  * `name`: string
+  * `email`: string
+  * `github_url`: string
+  * `created_at`: string
 * `meta`: object
   * `page`: number
   * `size`: number
@@ -793,11 +802,20 @@ refresh token으로 access token을 재발급한다.
 
 ```json
 {
-  "data": [],
+  "data": [
+    {
+      "applicant_id": "550e8400-e29b-41d4-a716-446655440020",
+      "group_id": "550e8400-e29b-41d4-a716-446655440010",
+      "name": "candidate",
+      "email": "c@example.com",
+      "github_url": "https://github.com/user",
+      "created_at": "2026-04-08T15:00:00.000Z"
+    }
+  ],
   "meta": {
     "page": 1,
     "size": 20,
-    "total": 0,
+    "total": 1,
     "request_id": "6f1d7e14-6d74-4c74-97b1-6ef7a7df0021"
   },
   "error": null
@@ -1212,6 +1230,7 @@ refresh token으로 access token을 재발급한다.
 
 ### 목적
 특정 지원자 기준으로 생성된 면접 질문 목록을 조회한다.
+기본 정렬은 `priority asc`이며, `sort`/`order`로 변경할 수 있다.
 
 ---
 
@@ -1227,9 +1246,9 @@ refresh token으로 access token을 재발급한다.
 - `size`: number | null (optional)
   - 페이지 크기
 - `sort`: string | null (optional)
-  - 정렬 필드
+  - 정렬 필드 (`priority` 또는 `createdAt`, 기본값 `priority`)
 - `order`: string | null (optional)
-  - `asc` 또는 `desc`
+  - `asc` 또는 `desc` (기본값 `asc`)
 
 #### Body (JSON)
 없음
@@ -1251,7 +1270,12 @@ refresh token으로 access token을 재발급한다.
 ##### 구조
 
 * `data`: array
-  * 질문 목록
+  * `question_id`: string
+  * `analysis_run_id`: string
+  * `category`: string
+  * `question_text`: string
+  * `intent`: string | null
+  * `priority`: number | null
 * `meta`: object
   * `page`: number
   * `size`: number
@@ -1263,11 +1287,20 @@ refresh token으로 access token을 재발급한다.
 
 ```json
 {
-  "data": [],
+  "data": [
+    {
+      "question_id": "550e8400-e29b-41d4-a716-446655440081",
+      "analysis_run_id": "550e8400-e29b-41d4-a716-446655440040",
+      "category": "SKILL",
+      "question_text": "What trade-off did you make in this implementation?",
+      "intent": "Understand technical decision making",
+      "priority": 1
+    }
+  ],
   "meta": {
     "page": 1,
     "size": 10,
-    "total": 0,
+    "total": 1,
     "request_id": "6f1d7e14-6d74-4c74-97b1-6ef7a7df0081"
   },
   "error": null
