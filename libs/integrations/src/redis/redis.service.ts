@@ -8,20 +8,6 @@ export class RedisService implements OnModuleDestroy {
 
   constructor(private readonly configService: ConfigService) {}
 
-  async set(
-    key: string,
-    value: string,
-    ttlSeconds?: number,
-  ): Promise<'OK' | null> {
-    const client = this.getClient();
-
-    if (ttlSeconds) {
-      return client.set(key, value, 'EX', ttlSeconds);
-    }
-
-    return client.set(key, value);
-  }
-
   async setIfAbsent(
     key: string,
     value: string,
@@ -49,12 +35,41 @@ export class RedisService implements OnModuleDestroy {
     }
 
     this.client = new Redis({
-      host: this.configService.get<string>('redis.host'),
-      port: this.configService.get<number>('redis.port'),
+      host: this.configService.getOrThrow<string>('redis.host'),
+      port: this.configService.getOrThrow<number>('redis.port'),
       lazyConnect: true,
       maxRetriesPerRequest: 1,
     });
 
     return this.client;
+  }
+
+  async get<T>(key: string): Promise<T | null> {
+    const value = await this.getClient().get(key);
+
+    if (!value) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return value as T;
+    }
+  }
+
+  async set(
+    key: string,
+    value: unknown,
+    ttlSeconds?: number,
+  ): Promise<'OK' | null> {
+    const serializedValue =
+      typeof value === 'string' ? value : JSON.stringify(value);
+
+    if (ttlSeconds) {
+      return this.getClient().set(key, serializedValue, 'EX', ttlSeconds);
+    }
+
+    return this.getClient().set(key, serializedValue);
   }
 }

@@ -5,7 +5,7 @@ import {
 } from '@app/database';
 import {
   GitHubService,
-  type RepositoryInfoDto,
+  type RepositoryMetadataDto,
   type RepositorySourceFileDto,
 } from '@app/integrations';
 import { Injectable } from '@nestjs/common';
@@ -24,10 +24,11 @@ export class GithubRepositoryProcessor {
     private readonly repositoryFilesRepository: Repository<RepositoryFilesEntity>,
   ) {}
 
-  async syncRepositoryInfo(analysisRunId: string): Promise<RepositoryInfoDto> {
+  async syncRepositoryInfo(analysisRunId: string): Promise<RepositoryMetadataDto> {
     const analysisRun = await this.getAnalysisRunWithRepository(analysisRunId);
-    const repositoryRef = this.parseRepositoryFullName(analysisRun.repository.repoFullName);
-    const repositoryInfo = await this.gitHubService.getRepositoryInfo(repositoryRef);
+    const repositoryInfo = await this.gitHubService.getRepositoryMetadata({
+      repoFullName: analysisRun.repository.repoFullName,
+    });
 
     await this.applicantRepositoriesRepository.update(analysisRun.repositoryId, {
       defaultBranch: repositoryInfo.defaultBranch,
@@ -41,13 +42,12 @@ export class GithubRepositoryProcessor {
     defaultBranch: string;
   }): Promise<string[]> {
     const analysisRun = await this.getAnalysisRunWithRepository(input.analysisRunId);
-    const repositoryRef = this.parseRepositoryFullName(analysisRun.repository.repoFullName);
-    const treeEntries = await this.gitHubService.getRepositoryTree({
-      ...repositoryRef,
-      treeSha: input.defaultBranch,
+    const repositoryTree = await this.gitHubService.getRepositoryTree({
+      repoFullName: analysisRun.repository.repoFullName,
+      branch: input.defaultBranch,
     });
 
-    return treeEntries
+    return repositoryTree.items
       .filter((entry) => {
         return entry.type === 'blob' && typeof entry.path === 'string' && entry.path.length > 0;
       })
@@ -62,11 +62,10 @@ export class GithubRepositoryProcessor {
     selectedPaths: string[];
   }): Promise<Array<{ content: string; path: string }>> {
     const analysisRun = await this.getAnalysisRunWithRepository(input.analysisRunId);
-    const repositoryRef = this.parseRepositoryFullName(analysisRun.repository.repoFullName);
     const files = await Promise.all(
       input.selectedPaths.map(async (path) => {
         const sourceFile = await this.gitHubService.getRepositorySourceFile({
-          ...repositoryRef,
+          repoFullName: analysisRun.repository.repoFullName,
           path,
           ref: input.defaultBranch,
         });
@@ -109,20 +108,6 @@ export class GithubRepositoryProcessor {
 
     return analysisRun as AnalysisRunsEntity & { repository: ApplicantRepositoriesEntity };
   }
-
-  private parseRepositoryFullName(repoFullName: string): { owner: string; repo: string } {
-    const [owner, repo] = repoFullName.split('/');
-
-    if (!owner || !repo) {
-      throw new Error(`Invalid repository full name: ${repoFullName}`);
-    }
-
-    return {
-      owner,
-      repo,
-    };
-  }
-
   private async replaceRepositoryFiles(input: {
     files: Array<{ path: string; sourceFile: RepositorySourceFileDto }>;
     repositoryId: string;
