@@ -14,6 +14,10 @@ export default (): {
   };
   rabbitmq: {
     url: string | undefined;
+    maxRetry: number;
+  };
+  analysis: {
+    lockTtl: number;
   };
   jwt: {
     accessSecret: string | undefined;
@@ -27,6 +31,8 @@ export default (): {
   llm: {
     apiKey: string | undefined;
     model: string | undefined;
+    maxRetries: number;
+    timeoutMs: number;
   };
 } => ({
   nodeEnv: process.env.NODE_ENV ?? 'local',
@@ -47,6 +53,11 @@ export default (): {
 
   rabbitmq: {
     url: process.env.RABBITMQ_URL,
+    maxRetry: parseInt(process.env.RABBITMQ_MAX_RETRY ?? '2', 10),
+  },
+
+  analysis: {
+    lockTtl: parseInt(process.env.ANALYSIS_LOCK_TTL ?? '600', 10),
   },
 
   jwt: {
@@ -63,5 +74,7 @@ export default (): {
   llm: {
     apiKey: process.env.LLM_API_KEY,
     model: process.env.LLM_MODEL,
+    maxRetries: parseInt(process.env.LLM_MAX_RETRIES ?? '2', 10),
+    timeoutMs: parseInt(process.env.LLM_TIMEOUT_MS ?? '30000', 10),
   },
 });

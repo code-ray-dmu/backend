@@ -2,3 +2,8 @@ export * from './interfaces';
 export * from './llm.client';
 export * from './llm.module';
 export * from './llm.service';
+export * from './llm.tokens';
+export * from './llm.types';
+export * from './openai-provider-adapter';
+export * from './parsers';
+export * from './prompt-builder';
