@@ -1,34 +1,73 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { request } from 'node:https';
 import {
-  GetRepositoryParamsDto,
+  GetRepositoryMetadataParamsDto,
   GetRepositoryTreeParamsDto,
   GetRepositoryContentParamsDto,
-  GitHubRepositoryResponseDto,
-  GitHubRepositoryTreeResponseDto,
+  GitHubClientResponseDto,
   GitHubRepositoryContentResponseDto,
+  GitHubRepositoryMetadataResponseDto,
+  GitHubRepositoryTreeResponseDto,
   GitHubUserRepositoryResponseDto,
+  GitHubRateLimitDto,
+  ListUserRepositoriesParamsDto,
 } from './dto';
+import { GitHubClientError } from './github-client.error';
 
 @Injectable()
 export class GitHubClient {
   private readonly baseUrl = 'https://api.github.com';
+  private readonly githubToken: string;
+  private readonly maxRepositorySelectionCount: number;
 
-  async getRepository(
-    params: GetRepositoryParamsDto,
-  ): Promise<GitHubRepositoryResponseDto> {
+  constructor(private readonly configService: ConfigService) {
+    this.githubToken = this.configService.getOrThrow<string>('github.token');
+    this.maxRepositorySelectionCount = this.parseMaxRepositorySelectionCount(
+      process.env.MAX_REPO_SELECTION_COUNT,
+    );
+  }
+
+  async listUserRepositories(
+    params: ListUserRepositoriesParamsDto,
+  ): Promise<GitHubClientResponseDto<GitHubUserRepositoryResponseDto[]>> {
+    const { owner } = params;
+    const requestPath = new URL(
+      `/users/${this.encodePathSegment(owner)}/repos`,
+      this.baseUrl,
+    );
+
+    requestPath.searchParams.set('sort', 'updated');
+    requestPath.searchParams.set('direction', 'desc');
+    requestPath.searchParams.set('type', 'public');
+    requestPath.searchParams.set(
+      'per_page',
+      this.maxRepositorySelectionCount.toString(),
+    );
+
+    return this.get<GitHubUserRepositoryResponseDto[]>(requestPath);
+  }
+
+  async getRepositoryMetadata(
+    params: GetRepositoryMetadataParamsDto,
+  ): Promise<GitHubClientResponseDto<GitHubRepositoryMetadataResponseDto>> {
     const { owner, repo } = params;
-    const requestPath = new URL(`/repos/${owner}/${repo}`, this.baseUrl);
+    const requestPath = new URL(
+      `/repos/${this.encodePathSegment(owner)}/${this.encodePathSegment(repo)}`,
+      this.baseUrl,
+    );
 
-    return this.get<GitHubRepositoryResponseDto>(requestPath);
+    return this.get<GitHubRepositoryMetadataResponseDto>(requestPath);
   }
 
   async getRepositoryTree(
     params: GetRepositoryTreeParamsDto,
-  ): Promise<GitHubRepositoryTreeResponseDto> {
-    const { owner, repo, treeSha } = params;
+  ): Promise<GitHubClientResponseDto<GitHubRepositoryTreeResponseDto>> {
+    const { owner, repo, branch } = params;
     const requestPath = new URL(
-      `/repos/${owner}/${repo}/git/trees/${treeSha}`,
+      `/repos/${this.encodePathSegment(owner)}/${this.encodePathSegment(
+        repo,
+      )}/git/trees/${this.encodePathSegment(branch)}`,
       this.baseUrl,
     );
 
@@ -39,10 +78,12 @@ export class GitHubClient {
 
   async getRepositoryContent(
     params: GetRepositoryContentParamsDto,
-  ): Promise<GitHubRepositoryContentResponseDto> {
+  ): Promise<GitHubClientResponseDto<GitHubRepositoryContentResponseDto>> {
     const { owner, repo, path, ref } = params;
     const requestPath = new URL(
-      `/repos/${owner}/${repo}/contents/${path}`,
+      `/repos/${this.encodePathSegment(owner)}/${this.encodePathSegment(
+        repo,
+      )}/contents/${this.encodeContentPath(path)}`,
       this.baseUrl,
     );
 
@@ -53,26 +94,15 @@ export class GitHubClient {
     return this.get<GitHubRepositoryContentResponseDto>(requestPath);
   }
 
-  async listUserRepositories(
-    owner: string,
-    perPage: number,
-  ): Promise<GitHubUserRepositoryResponseDto[]> {
-    const requestPath = new URL(`/users/${owner}/repos`, this.baseUrl);
-    requestPath.searchParams.set('sort', 'updated');
-    requestPath.searchParams.set('direction', 'desc');
-    requestPath.searchParams.set('per_page', String(perPage));
-
-    return this.get<GitHubUserRepositoryResponseDto[]>(requestPath);
-  }
-
-  private async get<T>(url: URL): Promise<T> {
-    return new Promise<T>((resolve, reject) => {
+  private async get<T>(url: URL): Promise<GitHubClientResponseDto<T>> {
+    return new Promise<GitHubClientResponseDto<T>>((resolve, reject) => {
       const req = request(
         url,
         {
           method: 'GET',
           headers: {
-            Accept: 'application/vnd.github+json',
+            Accept: 'application/vnd.github.v3+json',
+            Authorization: `token ${this.githubToken}`,
             'User-Agent': 'code-ray-server',
             'X-GitHub-Api-Version': '2022-11-28',
           },
@@ -85,35 +115,100 @@ export class GitHubClient {
             responseBody += chunk;
           });
           res.on('end', () => {
+            const rateLimit = this.extractRateLimit(res.headers);
+
             if (!res.statusCode || res.statusCode >= 400) {
-              reject(new Error(this.toGitHubRequestError(res.statusCode, responseBody)));
+              reject(
+                new GitHubClientError({
+                  message: `GitHub API request failed with status ${res.statusCode}: ${responseBody}`,
+                  statusCode: res.statusCode ?? null,
+                  responseBody,
+                  rateLimit,
+                }),
+              );
               return;
             }
 
-            resolve(JSON.parse(responseBody) as T);
+            try {
+              resolve({
+                body: JSON.parse(responseBody) as T,
+                statusCode: res.statusCode,
+                rateLimit,
+              });
+            } catch (error) {
+              reject(
+                new GitHubClientError({
+                  message: `GitHub API response parsing failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+                  statusCode: res.statusCode,
+                  responseBody,
+                  rateLimit,
+                }),
+              );
+            }
           });
         },
       );
 
-      req.on('error', reject);
+      req.on('error', (error) => {
+        reject(
+          new GitHubClientError({
+            message: `GitHub API transport failed: ${error.message}`,
+            statusCode: null,
+            responseBody: '',
+            rateLimit: {
+              remaining: null,
+              resetAtEpochSeconds: null,
+            },
+          }),
+        );
+      });
       req.end();
     });
   }
 
-  private toGitHubRequestError(statusCode: number, responseBody: string): string {
-    const normalizedBody = responseBody.toLowerCase();
+  private encodePathSegment(segment: string): string {
+    return encodeURIComponent(segment);
+  }
 
-    if (
-      statusCode === 403 &&
-      (normalizedBody.includes('rate limit') || normalizedBody.includes('api rate limit'))
-    ) {
-      return `GITHUB_RATE_LIMIT_EXCEEDED: ${responseBody}`;
+  private encodeContentPath(path: string): string {
+    return path
+      .split('/')
+      .map((segment) => this.encodePathSegment(segment))
+      .join('/');
+  }
+
+  private extractRateLimit(headers: {
+    [key: string]: string | string[] | undefined;
+  }): GitHubRateLimitDto {
+    return {
+      remaining: this.parseRateLimitHeader(headers['x-ratelimit-remaining']),
+      resetAtEpochSeconds: this.parseRateLimitHeader(
+        headers['x-ratelimit-reset'],
+      ),
+    };
+  }
+
+  private parseRateLimitHeader(
+    headerValue: string | string[] | undefined,
+  ): number | null {
+    const value = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+
+    if (!value) {
+      return null;
     }
 
-    if (statusCode === 401 || statusCode === 403 || statusCode === 404) {
-      return `GITHUB_REPOSITORY_ACCESS_DENIED: ${responseBody}`;
+    const parsedValue = Number.parseInt(value, 10);
+
+    return Number.isNaN(parsedValue) ? null : parsedValue;
+  }
+
+  private parseMaxRepositorySelectionCount(value: string | undefined): number {
+    const parsedValue = Number.parseInt(value ?? '3', 10);
+
+    if (Number.isNaN(parsedValue) || parsedValue <= 0) {
+      return 3;
     }
 
-    return `GITHUB_REQUEST_FAILED: status=${statusCode} body=${responseBody}`;
+    return parsedValue;
   }
 }

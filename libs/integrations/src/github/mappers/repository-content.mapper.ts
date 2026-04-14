@@ -1,11 +1,7 @@
 import {
-  GitHubRepositoryResponseDto,
-  GitHubRepositoryTreeEntryDto,
   GitHubRepositoryContentResponseDto,
-  RepositoryInfoDto,
   RepositorySourceFileDto,
-  RepositoryTreeEntryDto,
-} from '../dto/get-repository-content.dto';
+} from '../dto';
 
 export class RepositoryContentMapper {
   static toRepositorySourceFile(
@@ -23,23 +19,6 @@ export class RepositoryContentMapper {
       encoding: source.encoding,
       content: source.content,
       decodedContent,
-    };
-  }
-
-  static toRepositoryInfo(source: GitHubRepositoryResponseDto): RepositoryInfoDto {
-    return {
-      defaultBranch: source.default_branch,
-      fullName: source.full_name,
-    };
-  }
-
-  static toRepositoryTreeEntry(
-    source: GitHubRepositoryTreeEntryDto,
-  ): RepositoryTreeEntryDto {
-    return {
-      path: source.path,
-      size: source.size,
-      type: source.type,
     };
   }
 }
