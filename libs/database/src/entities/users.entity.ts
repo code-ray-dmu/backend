@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 import { AnalysisRunsEntity } from './analysis-runs.entity';
 import { GroupsEntity } from './groups.entity';
@@ -6,6 +6,7 @@ import { RefreshTokensEntity } from './refresh-tokens.entity';
 import { BaseTimestampEntity } from './base-timestamp.entity';
 
 @Entity('users')
+@Index('IDX_users_email_unique', ['email'], { unique: true })
 export class UsersEntity extends BaseTimestampEntity {
   @PrimaryGeneratedColumn('uuid')
     id: string;
