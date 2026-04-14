@@ -1,13 +1,24 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { RabbitMqModule, RedisModule } from '@app/integrations';
+import {
+  AnalysisRunsEntity,
+  ApplicantRepositoriesEntity,
+  CodeAnalysisEntity,
+  GeneratedQuestionsEntity,
+  LlmMessagesEntity,
+  PromptTemplatesEntity,
+  RepositoryFilesEntity,
+  typeOrmConfig,
+} from '@app/database';
+import { GitHubModule, LlmModule, RabbitMqModule, RedisModule } from '@app/integrations';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import configuration from './config/configuration';
 import { envValidationSchema } from './config/env.validation';
 import { AnalysisRunJob } from './jobs/analysis-run.job';
-import { QuestionGenerationJob } from './jobs/question-generation.job';
+import { LlmAnalysisJob } from './jobs/llm-analysis.job';
 import { AnalysisRunProcessor } from './processors/analysis-run.processor';
 import { GithubRepositoryProcessor } from './processors/github-repository.processor';
-import { QuestionGenerationProcessor } from './processors/question-generation.processor';
+import { LlmAnalysisProcessor } from './processors/llm-analysis.processor';
 import { CleanupScheduler } from './schedulers/cleanup.scheduler';
 
 @Module({
@@ -17,6 +28,18 @@ import { CleanupScheduler } from './schedulers/cleanup.scheduler';
       load: [configuration],
       validationSchema: envValidationSchema,
     }),
+    TypeOrmModule.forRootAsync(typeOrmConfig),
+    TypeOrmModule.forFeature([
+      AnalysisRunsEntity,
+      ApplicantRepositoriesEntity,
+      CodeAnalysisEntity,
+      GeneratedQuestionsEntity,
+      LlmMessagesEntity,
+      PromptTemplatesEntity,
+      RepositoryFilesEntity,
+    ]),
+    GitHubModule,
+    LlmModule,
     RabbitMqModule,
     RedisModule,
     // Shared/database modules will be wired here as they are added.
@@ -24,9 +47,9 @@ import { CleanupScheduler } from './schedulers/cleanup.scheduler';
   providers: [
     AnalysisRunProcessor,
     GithubRepositoryProcessor,
-    QuestionGenerationProcessor,
+    LlmAnalysisProcessor,
     AnalysisRunJob,
-    QuestionGenerationJob,
+    LlmAnalysisJob,
     CleanupScheduler,
   ],
 })

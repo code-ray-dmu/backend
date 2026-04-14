@@ -20,4 +20,13 @@ export const envValidationSchema = Joi.object({
 
   LLM_API_KEY: Joi.string().required(),
   LLM_MODEL: Joi.string().required(),
+  LLM_MAX_RETRIES: Joi.number().integer().min(0).max(10).default(2),
+  LLM_TIMEOUT_MS: Joi.number().integer().min(1000).max(120000).default(30000),
+
+  MAX_ANALYSIS_FILES: Joi.number().integer().min(1).max(100).default(10),
+  MAX_QUESTIONS_PER_ANALYSIS_RUN: Joi.number()
+    .integer()
+    .min(1)
+    .max(20)
+    .default(3),
 });
