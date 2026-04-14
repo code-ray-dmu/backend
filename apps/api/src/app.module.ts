@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { typeOrmConfig } from '@app/database';
 import { RabbitMqModule, RedisModule } from '@app/integrations';
 import configuration from './config/configuration';
 import { envValidationSchema } from './config/env.validation';
@@ -20,6 +22,7 @@ import { UsersModule } from './modules/users/users.module';
       load: [configuration],
       validationSchema: envValidationSchema,
     }),
+    TypeOrmModule.forRootAsync(typeOrmConfig),
     RabbitMqModule,
     RedisModule,
     AuthModule,

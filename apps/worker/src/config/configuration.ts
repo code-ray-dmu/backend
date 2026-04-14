@@ -13,6 +13,10 @@ export default (): {
   };
   rabbitmq: {
     url: string | undefined;
+    maxRetry: number;
+  };
+  analysis: {
+    lockTtl: number;
   };
   github: {
     token: string | undefined;
@@ -39,6 +43,11 @@ export default (): {
 
   rabbitmq: {
     url: process.env.RABBITMQ_URL,
+    maxRetry: parseInt(process.env.RABBITMQ_MAX_RETRY ?? '2', 10),
+  },
+
+  analysis: {
+    lockTtl: parseInt(process.env.ANALYSIS_LOCK_TTL ?? '600', 10),
   },
 
   github: {

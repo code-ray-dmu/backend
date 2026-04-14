@@ -17,6 +17,7 @@ export const envValidationSchema = Joi.object({
   REDIS_PORT: Joi.number().integer().min(1).max(65535).default(6379),
 
   RABBITMQ_URL: Joi.string().uri().required(),
+  RABBITMQ_MAX_RETRY: Joi.number().integer().min(0).default(2),
 
   JWT_ACCESS_SECRET: Joi.string().required(),
   JWT_REFRESH_SECRET: Joi.string().required(),
@@ -31,4 +32,7 @@ export const envValidationSchema = Joi.object({
 
   LLM_API_KEY: Joi.string().required(),
   LLM_MODEL: Joi.string().required(),
+
+  MAX_REPO_SELECTION_COUNT: Joi.number().integer().min(1).default(3),
+  ANALYSIS_LOCK_TTL: Joi.number().integer().min(1).default(600),
 });

@@ -3,6 +3,7 @@ import { request } from 'node:https';
 import {
   GetRepositoryContentParamsDto,
   GitHubRepositoryContentResponseDto,
+  GitHubUserRepositoryResponseDto,
 } from './dto';
 
 @Injectable()
@@ -23,6 +24,18 @@ export class GitHubClient {
     }
 
     return this.get<GitHubRepositoryContentResponseDto>(requestPath);
+  }
+
+  async listUserRepositories(
+    owner: string,
+    perPage: number,
+  ): Promise<GitHubUserRepositoryResponseDto[]> {
+    const requestPath = new URL(`/users/${owner}/repos`, this.baseUrl);
+    requestPath.searchParams.set('sort', 'updated');
+    requestPath.searchParams.set('direction', 'desc');
+    requestPath.searchParams.set('per_page', String(perPage));
+
+    return this.get<GitHubUserRepositoryResponseDto[]>(requestPath);
   }
 
   private async get<T>(url: URL): Promise<T> {

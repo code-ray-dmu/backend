@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { typeOrmConfig, AnalysisRunsEntity } from '@app/database';
 import { RabbitMqModule, RedisModule } from '@app/integrations';
 import configuration from './config/configuration';
 import { envValidationSchema } from './config/env.validation';
@@ -8,6 +10,7 @@ import { QuestionGenerationJob } from './jobs/question-generation.job';
 import { AnalysisRunProcessor } from './processors/analysis-run.processor';
 import { GithubRepositoryProcessor } from './processors/github-repository.processor';
 import { QuestionGenerationProcessor } from './processors/question-generation.processor';
+import { AnalysisRunsRepository } from './repositories/analysis-runs.repository';
 import { CleanupScheduler } from './schedulers/cleanup.scheduler';
 
 @Module({
@@ -17,9 +20,10 @@ import { CleanupScheduler } from './schedulers/cleanup.scheduler';
       load: [configuration],
       validationSchema: envValidationSchema,
     }),
+    TypeOrmModule.forRootAsync(typeOrmConfig),
+    TypeOrmModule.forFeature([AnalysisRunsEntity]),
     RabbitMqModule,
     RedisModule,
-    // Shared/database modules will be wired here as they are added.
   ],
   providers: [
     AnalysisRunProcessor,
@@ -27,6 +31,7 @@ import { CleanupScheduler } from './schedulers/cleanup.scheduler';
     QuestionGenerationProcessor,
     AnalysisRunJob,
     QuestionGenerationJob,
+    AnalysisRunsRepository,
     CleanupScheduler,
   ],
 })
