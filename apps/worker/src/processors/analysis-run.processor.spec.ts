@@ -1,8 +1,10 @@
 import { AnalysisRunStatus, AnalysisStage } from '@app/core';
 import { AnalysisRunsEntity } from '@app/database';
+import { RabbitMqService } from '@app/integrations';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { AnalysisRunJob } from '../jobs/analysis-run.job';
 import { AnalysisRunProcessor } from './analysis-run.processor';
 import { GithubRepositoryProcessor } from './github-repository.processor';
 import { LlmAnalysisProcessor } from './llm-analysis.processor';
@@ -20,6 +22,12 @@ describe('AnalysisRunProcessor', () => {
     generateQuestions: jest.Mock;
     selectFiles: jest.Mock;
   };
+  let rabbitMqService: {
+    consume: jest.Mock;
+  };
+  let analysisRunJob: {
+    run: jest.Mock;
+  };
 
   beforeEach(async () => {
     analysisRunsRepository = {
@@ -36,10 +44,24 @@ describe('AnalysisRunProcessor', () => {
       generateQuestions: jest.fn(),
       selectFiles: jest.fn(),
     };
+    rabbitMqService = {
+      consume: jest.fn(),
+    };
+    analysisRunJob = {
+      run: jest.fn(),
+    };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         AnalysisRunProcessor,
+        {
+          provide: RabbitMqService,
+          useValue: rabbitMqService,
+        },
+        {
+          provide: AnalysisRunJob,
+          useValue: analysisRunJob,
+        },
         {
           provide: GithubRepositoryProcessor,
           useValue: githubRepositoryProcessor,
@@ -56,6 +78,66 @@ describe('AnalysisRunProcessor', () => {
     }).compile();
 
     processor = moduleRef.get(AnalysisRunProcessor);
+  });
+
+  it('registers queue consumers and runs the pipeline for queued messages', async () => {
+    const consumers: Array<(payload: { analysisRunId: string }) => Promise<void>> = [];
+    rabbitMqService.consume.mockImplementation(
+      async (
+        _queue: string,
+        _exchange: string,
+        _routingKey: string,
+        handler: (payload: { analysisRunId: string }) => Promise<void>,
+      ) => {
+        consumers.push(handler);
+      },
+    );
+    analysisRunJob.run.mockResolvedValue(true);
+    analysisRunsRepository.findOne.mockResolvedValue({
+      id: 'run-queue',
+    } as AnalysisRunsEntity);
+    githubRepositoryProcessor.syncRepositoryInfo.mockResolvedValue({
+      defaultBranch: 'main',
+      fullName: 'owner/repo',
+    });
+    githubRepositoryProcessor.getRepositoryFilePaths.mockResolvedValue(['src/main.ts']);
+    llmAnalysisProcessor.selectFiles.mockResolvedValue(['src/main.ts']);
+    githubRepositoryProcessor.saveSelectedFiles.mockResolvedValue([
+      { content: 'console.log("hi");', path: 'src/main.ts' },
+    ]);
+    llmAnalysisProcessor.analyzeCode.mockResolvedValue({});
+    llmAnalysisProcessor.generateQuestions.mockResolvedValue([]);
+
+    await processor.onModuleInit();
+    await consumers[0]({ analysisRunId: 'run-queue' });
+
+    expect(rabbitMqService.consume).toHaveBeenCalledTimes(2);
+    expect(analysisRunJob.run).toHaveBeenCalledWith({
+      analysisRunId: 'run-queue',
+    });
+    expect(githubRepositoryProcessor.syncRepositoryInfo).toHaveBeenCalledWith(
+      'run-queue',
+    );
+  });
+
+  it('skips the pipeline when the queued message is no longer processable', async () => {
+    let consumer: ((payload: { analysisRunId: string }) => Promise<void>) | undefined;
+    rabbitMqService.consume.mockImplementation(
+      async (
+        _queue: string,
+        _exchange: string,
+        _routingKey: string,
+        handler: (payload: { analysisRunId: string }) => Promise<void>,
+      ) => {
+        consumer = handler;
+      },
+    );
+    analysisRunJob.run.mockResolvedValue(false);
+
+    await processor.onModuleInit();
+    await consumer?.({ analysisRunId: 'run-skipped' });
+
+    expect(githubRepositoryProcessor.syncRepositoryInfo).not.toHaveBeenCalled();
   });
 
   it('orchestrates github and llm stages and completes the run', async () => {

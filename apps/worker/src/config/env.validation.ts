@@ -15,6 +15,7 @@ export const envValidationSchema = Joi.object({
   REDIS_PORT: Joi.number().integer().min(1).max(65535).default(6379),
 
   RABBITMQ_URL: Joi.string().uri().required(),
+  RABBITMQ_MAX_RETRY: Joi.number().integer().min(0).default(2),
 
   GITHUB_TOKEN: Joi.string().required(),
 
@@ -29,4 +30,6 @@ export const envValidationSchema = Joi.object({
     .min(1)
     .max(20)
     .default(3),
+
+  ANALYSIS_LOCK_TTL: Joi.number().integer().min(1).default(600),
 });

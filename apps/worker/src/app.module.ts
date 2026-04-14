@@ -18,6 +18,7 @@ import { AnalysisRunJob } from './jobs/analysis-run.job';
 import { LlmAnalysisJob } from './jobs/llm-analysis.job';
 import { AnalysisRunProcessor } from './processors/analysis-run.processor';
 import { GithubRepositoryProcessor } from './processors/github-repository.processor';
+import { AnalysisRunsRepository } from './repositories/analysis-runs.repository';
 import { LlmAnalysisProcessor } from './processors/llm-analysis.processor';
 import { CleanupScheduler } from './schedulers/cleanup.scheduler';
 
@@ -42,13 +43,13 @@ import { CleanupScheduler } from './schedulers/cleanup.scheduler';
     LlmModule,
     RabbitMqModule,
     RedisModule,
-    // Shared/database modules will be wired here as they are added.
   ],
   providers: [
     AnalysisRunProcessor,
     GithubRepositoryProcessor,
     LlmAnalysisProcessor,
     AnalysisRunJob,
+    AnalysisRunsRepository,
     LlmAnalysisJob,
     CleanupScheduler,
   ],

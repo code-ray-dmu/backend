@@ -13,6 +13,7 @@ export default (): {
   };
   rabbitmq: {
     url: string | undefined;
+    maxRetry: number;
   };
   github: {
     token: string | undefined;
@@ -24,6 +25,7 @@ export default (): {
     timeoutMs: number;
   };
   analysis: {
+    lockTtl: number;
     maxAnalysisFiles: number;
     maxQuestionsPerAnalysisRun: number;
   };
@@ -45,6 +47,7 @@ export default (): {
 
   rabbitmq: {
     url: process.env.RABBITMQ_URL,
+    maxRetry: parseInt(process.env.RABBITMQ_MAX_RETRY ?? '2', 10),
   },
 
   github: {
@@ -59,6 +62,7 @@ export default (): {
   },
 
   analysis: {
+    lockTtl: parseInt(process.env.ANALYSIS_LOCK_TTL ?? '600', 10),
     maxAnalysisFiles: parseInt(process.env.MAX_ANALYSIS_FILES ?? '10', 10),
     maxQuestionsPerAnalysisRun: parseInt(
       process.env.MAX_QUESTIONS_PER_ANALYSIS_RUN ?? '3',
