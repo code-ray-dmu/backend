@@ -14,7 +14,7 @@ export class AnalysisRunJob {
     private readonly redisService: RedisService,
   ) {}
 
-  async run(payload: AnalysisRequestPayload): Promise<void> {
+  async run(payload: AnalysisRequestPayload): Promise<boolean> {
     const lockKey = `${REDIS_CACHE_KEYS.ANALYSIS_RUN_LOCK}:${payload.repositoryId}`;
     const progressKey = `${REDIS_CACHE_KEYS.ANALYSIS_RUN_PROGRESS}:${payload.analysisRunId}`;
     const lockTtl = this.configService.get<number>('analysis.lockTtl', 600);
@@ -35,7 +35,7 @@ export class AnalysisRunJob {
       }
 
       if (analysisRun.status !== AnalysisRunStatus.QUEUED) {
-        return;
+        return false;
       }
 
       await this.analysisRunsRepository.markInProgress(
@@ -52,6 +52,8 @@ export class AnalysisRunJob {
       };
 
       await this.redisService.set(progressKey, JSON.stringify(progress), 3600);
+
+      return true;
     } catch (error) {
       const failureReason = error instanceof Error ? error.message : 'Unknown analysis worker error';
       await this.analysisRunsRepository.markFailed(payload.analysisRunId, failureReason);

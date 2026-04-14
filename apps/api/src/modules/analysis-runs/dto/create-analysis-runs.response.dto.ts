@@ -1,4 +1,4 @@
 export interface CreateAnalysisRunsResponseDto {
   success: boolean;
-  analysisRunIds: string[];
+  analysis_run_ids: string[];
 }

@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GitHubService } from '@app/integrations';
 import { ApplicantRepositoriesEntity, ApplicantsEntity } from '@app/database';
 import { Repository } from 'typeorm';
+import { createApiSuccessBody } from '../../common/dto';
 import {
   CreateAnalysisRunsResponseDto,
   GetAnalysisRunResponseDto,
@@ -113,7 +114,7 @@ export class AnalysisRunsService {
 
     return {
       success: true,
-      analysisRunIds: publishedAnalysisRunIds,
+      analysis_run_ids: publishedAnalysisRunIds,
     };
   }
 
@@ -231,8 +232,8 @@ export class AnalysisRunsService {
       },
     );
 
-    return {
-      data: analysisRuns.map((analysisRun) => ({
+    return createApiSuccessBody(
+      analysisRuns.map((analysisRun) => ({
         analysis_run_id: analysisRun.id,
         applicant_id: analysisRun.applicantId,
         repository_id: analysisRun.repositoryId,
@@ -242,11 +243,11 @@ export class AnalysisRunsService {
         completed_at: analysisRun.completedAt,
         failure_reason: analysisRun.failureReason,
       })),
-      meta: {
+      {
         page,
         size,
         total,
       },
-    };
+    );
   }
 }

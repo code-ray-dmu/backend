@@ -1,0 +1,17 @@
+export const PROMPT_TEMPLATE_NOT_FOUND =
+  'PROMPT_TEMPLATE_NOT_FOUND';
+export const PROMPT_TEMPLATE_ACTIVE_AMBIGUOUS =
+  'PROMPT_TEMPLATE_ACTIVE_AMBIGUOUS';
+export const PROMPT_TEMPLATE_VARIABLE_MISSING =
+  'PROMPT_TEMPLATE_VARIABLE_MISSING';
+export const PROMPT_TEMPLATE_VARIABLE_TYPE_INVALID =
+  'PROMPT_TEMPLATE_VARIABLE_TYPE_INVALID';
+export const PROMPT_TEMPLATE_VARIABLE_UNDECLARED =
+  'PROMPT_TEMPLATE_VARIABLE_UNDECLARED';
+
+export class PromptBuilderError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = PromptBuilderError.name;
+  }
+}

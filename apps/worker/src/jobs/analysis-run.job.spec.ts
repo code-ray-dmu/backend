@@ -49,7 +49,7 @@ describe('AnalysisRunJob', () => {
       status: AnalysisRunStatus.QUEUED,
     } as never);
 
-    await job.run(payload);
+    await expect(job.run(payload)).resolves.toBe(true);
 
     expect(analysisRunsRepository.markInProgress).toHaveBeenCalledWith(
       'run-1',
@@ -96,7 +96,7 @@ describe('AnalysisRunJob', () => {
       status: AnalysisRunStatus.FAILED,
     } as never);
 
-    await expect(job.run(payload)).resolves.toBeUndefined();
+    await expect(job.run(payload)).resolves.toBe(false);
 
     expect(analysisRunsRepository.markInProgress).not.toHaveBeenCalled();
     expect(redisService.set).not.toHaveBeenCalled();

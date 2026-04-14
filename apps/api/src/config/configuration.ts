@@ -31,6 +31,8 @@ export default (): {
   llm: {
     apiKey: string | undefined;
     model: string | undefined;
+    maxRetries: number;
+    timeoutMs: number;
   };
 } => ({
   nodeEnv: process.env.NODE_ENV ?? 'local',
@@ -72,5 +74,7 @@ export default (): {
   llm: {
     apiKey: process.env.LLM_API_KEY,
     model: process.env.LLM_MODEL,
+    maxRetries: parseInt(process.env.LLM_MAX_RETRIES ?? '2', 10),
+    timeoutMs: parseInt(process.env.LLM_TIMEOUT_MS ?? '30000', 10),
   },
 });

@@ -21,6 +21,6 @@ import { JwtAccessStrategy, JwtRefreshStrategy } from './strategies';
     JwtAuthGuard,
     JwtRefreshGuard,
   ],
-  exports: [AuthService, AuthFacade],
+  exports: [AuthService, AuthFacade, JwtAuthGuard, JwtRefreshGuard],
 })
 export class AuthModule {}
