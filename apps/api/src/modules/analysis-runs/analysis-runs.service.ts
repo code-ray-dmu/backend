@@ -2,14 +2,14 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
-  InternalServerErrorException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { GitHubService } from '@app/integrations';
 import { ApplicantRepositoriesEntity, ApplicantsEntity } from '@app/database';
+import { GitHubService } from '@app/integrations';
 import { Repository } from 'typeorm';
 import {
   CreateAnalysisRunsResponseDto,
@@ -117,6 +117,66 @@ export class AnalysisRunsService {
     };
   }
 
+  async getAnalysisRunStatus(
+    analysisRunId: string,
+    currentUserId: string,
+  ): Promise<GetAnalysisRunResponseDto> {
+    const analysisRun = await this.analysisRunsRepository.findByIdAndRequestedByUserId(
+      analysisRunId,
+      currentUserId,
+    );
+
+    if (!analysisRun) {
+      throw new NotFoundException({
+        code: 'ANALYSIS_RUN_NOT_FOUND',
+        message: 'Analysis run not found',
+      });
+    }
+
+    return {
+      analysis_run_id: analysisRun.id,
+      status: analysisRun.status,
+      current_stage: analysisRun.currentStage,
+      started_at: analysisRun.startedAt,
+      completed_at: analysisRun.completedAt,
+      failure_reason: analysisRun.failureReason,
+    };
+  }
+
+  async getAnalysisRuns(
+    query: GetAnalysisRunsQueryDto,
+    currentUserId: string,
+  ): Promise<GetAnalysisRunsResponseDto> {
+    const page = query.page ?? 1;
+    const size = query.size ?? 20;
+    const [analysisRuns, total] = await this.analysisRunsRepository.findManyByRequestedByUserId(
+      currentUserId,
+      {
+        applicantId: query.applicantId,
+        page,
+        size,
+      },
+    );
+
+    return {
+      data: analysisRuns.map((analysisRun) => ({
+        analysis_run_id: analysisRun.id,
+        applicant_id: analysisRun.applicantId,
+        repository_id: analysisRun.repositoryId,
+        status: analysisRun.status,
+        current_stage: analysisRun.currentStage,
+        started_at: analysisRun.startedAt,
+        completed_at: analysisRun.completedAt,
+        failure_reason: analysisRun.failureReason,
+      })),
+      meta: {
+        page,
+        size,
+        total,
+      },
+    };
+  }
+
   private async syncApplicantRepositories(
     applicantId: string,
     githubUrl: string,
@@ -188,65 +248,5 @@ export class AnalysisRunsService {
     }
 
     return pathSegments[0];
-  }
-
-  async getAnalysisRunStatus(
-    analysisRunId: string,
-    currentUserId: string,
-  ): Promise<GetAnalysisRunResponseDto> {
-    const analysisRun = await this.analysisRunsRepository.findByIdAndRequestedByUserId(
-      analysisRunId,
-      currentUserId,
-    );
-
-    if (!analysisRun) {
-      throw new NotFoundException({
-        code: 'ANALYSIS_RUN_NOT_FOUND',
-        message: 'Analysis run not found',
-      });
-    }
-
-    return {
-      analysis_run_id: analysisRun.id,
-      status: analysisRun.status,
-      current_stage: analysisRun.currentStage,
-      started_at: analysisRun.startedAt,
-      completed_at: analysisRun.completedAt,
-      failure_reason: analysisRun.failureReason,
-    };
-  }
-
-  async getAnalysisRuns(
-    query: GetAnalysisRunsQueryDto,
-    currentUserId: string,
-  ): Promise<GetAnalysisRunsResponseDto> {
-    const page = query.page ?? 1;
-    const size = query.size ?? 20;
-    const [analysisRuns, total] = await this.analysisRunsRepository.findManyByRequestedByUserId(
-      currentUserId,
-      {
-        applicantId: query.applicantId,
-        page,
-        size,
-      },
-    );
-
-    return {
-      data: analysisRuns.map((analysisRun) => ({
-        analysis_run_id: analysisRun.id,
-        applicant_id: analysisRun.applicantId,
-        repository_id: analysisRun.repositoryId,
-        status: analysisRun.status,
-        current_stage: analysisRun.currentStage,
-        started_at: analysisRun.startedAt,
-        completed_at: analysisRun.completedAt,
-        failure_reason: analysisRun.failureReason,
-      })),
-      meta: {
-        page,
-        size,
-        total,
-      },
-    };
   }
 }
