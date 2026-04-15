@@ -2,6 +2,17 @@ import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
 import { DefaultNamingStrategy } from 'typeorm';
 import { snakeCase } from 'typeorm/util/StringUtils';
+import { AnalysisRunsEntity } from '../entities/analysis-runs.entity';
+import { ApplicantRepositoriesEntity } from '../entities/applicant-repositories.entity';
+import { ApplicantsEntity } from '../entities/applicants.entity';
+import { CodeAnalysisEntity } from '../entities/code-analysis.entity';
+import { GeneratedQuestionsEntity } from '../entities/generated-questions.entity';
+import { GroupsEntity } from '../entities/groups.entity';
+import { LlmMessagesEntity } from '../entities/llm-messages.entity';
+import { PromptTemplatesEntity } from '../entities/prompt-templates.entity';
+import { RefreshTokensEntity } from '../entities/refresh-tokens.entity';
+import { RepositoryFilesEntity } from '../entities/repository-files.entity';
+import { UsersEntity } from '../entities/users.entity';
 
 class SnakeCaseNamingStrategy extends DefaultNamingStrategy {
   tableName(targetName: string, userSpecifiedName: string | undefined): string {
@@ -43,6 +54,20 @@ class SnakeCaseNamingStrategy extends DefaultNamingStrategy {
   }
 }
 
+const databaseEntities = [
+  AnalysisRunsEntity,
+  ApplicantRepositoriesEntity,
+  ApplicantsEntity,
+  CodeAnalysisEntity,
+  GeneratedQuestionsEntity,
+  GroupsEntity,
+  LlmMessagesEntity,
+  PromptTemplatesEntity,
+  RefreshTokensEntity,
+  RepositoryFilesEntity,
+  UsersEntity,
+];
+
 export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
   useFactory: (configService: ConfigService) => ({
     type: 'postgres',
@@ -51,7 +76,7 @@ export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
     username: configService.get<string>('DB_USERNAME'),
     password: configService.get<string>('DB_PASSWORD'),
     database: configService.get<string>('DB_NAME'),
-    entities: [__dirname + '/../entities/*.entity.{ts,js}'],
+    entities: databaseEntities,
     migrations: [__dirname + '/../migrations/*.{ts,js}'],
     autoLoadEntities: false,
     synchronize: false,

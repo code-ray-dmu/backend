@@ -8,6 +8,10 @@ import { ApiResponseEnvelopeInterceptor } from './common/interceptors';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
+  app.enableCors({
+    origin: [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/],
+  });
+
   app.setGlobalPrefix('v1');
   app.useGlobalFilters(new ApiExceptionFilter());
   app.useGlobalInterceptors(new ApiResponseEnvelopeInterceptor());
