@@ -1,4 +1,5 @@
 export * from './config/typeorm.config';
+export * from './config/typeorm.data-source';
 export * from './entities/applicant-repositories.entity';
 export * from './entities/applicants.entity';
 export * from './entities/analysis-runs.entity';

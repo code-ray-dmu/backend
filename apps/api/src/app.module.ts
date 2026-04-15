@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from '@app/database';
 import { RabbitMqModule, RedisModule } from '@app/integrations';
+import { getEnvFilePaths } from '@app/shared';
 import configuration from './config/configuration';
 import { envValidationSchema } from './config/env.validation';
 import { AnalysisRunsModule } from './modules/analysis-runs/analysis-runs.module';
@@ -19,6 +20,7 @@ import { UsersModule } from './modules/users/users.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: getEnvFilePaths(process.env.NODE_ENV),
       load: [configuration],
       validationSchema: envValidationSchema,
     }),

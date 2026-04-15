@@ -11,6 +11,7 @@ import {
   typeOrmConfig,
 } from '@app/database';
 import { GitHubModule, LlmModule, RabbitMqModule, RedisModule } from '@app/integrations';
+import { getEnvFilePaths } from '@app/shared';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import configuration from './config/configuration';
 import { envValidationSchema } from './config/env.validation';
@@ -26,6 +27,7 @@ import { CleanupScheduler } from './schedulers/cleanup.scheduler';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: getEnvFilePaths(process.env.NODE_ENV),
       load: [configuration],
       validationSchema: envValidationSchema,
     }),

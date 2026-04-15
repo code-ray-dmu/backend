@@ -45,6 +45,12 @@ export class RabbitMqService implements OnModuleDestroy {
     });
   }
 
+  async ping(): Promise<void> {
+    const channel = await this.getChannel();
+
+    await this.ensureAnalysisRunTopology(channel);
+  }
+
   async onModuleDestroy(): Promise<void> {
     await this.channel?.close();
     await this.connection?.close();

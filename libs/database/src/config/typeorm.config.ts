@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
-import { DefaultNamingStrategy } from 'typeorm';
+import { DataSourceOptions, DefaultNamingStrategy } from 'typeorm';
 import { snakeCase } from 'typeorm/util/StringUtils';
 import { AnalysisRunsEntity } from '../entities/analysis-runs.entity';
 import { ApplicantRepositoriesEntity } from '../entities/applicant-repositories.entity';
@@ -14,7 +14,7 @@ import { RefreshTokensEntity } from '../entities/refresh-tokens.entity';
 import { RepositoryFilesEntity } from '../entities/repository-files.entity';
 import { UsersEntity } from '../entities/users.entity';
 
-class SnakeCaseNamingStrategy extends DefaultNamingStrategy {
+export class SnakeCaseNamingStrategy extends DefaultNamingStrategy {
   tableName(targetName: string, userSpecifiedName: string | undefined): string {
     return userSpecifiedName ?? snakeCase(targetName);
   }
@@ -54,7 +54,7 @@ class SnakeCaseNamingStrategy extends DefaultNamingStrategy {
   }
 }
 
-const databaseEntities = [
+export const databaseEntities = [
   AnalysisRunsEntity,
   ApplicantRepositoriesEntity,
   ApplicantsEntity,
@@ -68,21 +68,43 @@ const databaseEntities = [
   UsersEntity,
 ];
 
-export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
-  useFactory: (configService: ConfigService) => ({
+export function createTypeOrmDataSourceOptions(
+  config: DatabaseConfig,
+): DataSourceOptions {
+  return {
     type: 'postgres',
-    host: configService.get<string>('DB_HOST'),
-    port: configService.get<number>('DB_PORT'),
-    username: configService.get<string>('DB_USERNAME'),
-    password: configService.get<string>('DB_PASSWORD'),
-    database: configService.get<string>('DB_NAME'),
+    host: config.host,
+    port: config.port,
+    username: config.username,
+    password: config.password,
+    database: config.database,
     entities: databaseEntities,
     migrations: [__dirname + '/../migrations/*.{ts,js}'],
-    autoLoadEntities: false,
     synchronize: false,
-    logging: configService.get<string>('NODE_ENV') !== 'production',
+    logging: config.nodeEnv !== 'production',
     uuidExtension: 'pgcrypto',
     namingStrategy: new SnakeCaseNamingStrategy(),
-  }),
+  };
+}
+
+interface DatabaseConfig {
+  nodeEnv: string;
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  database: string;
+}
+
+export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
+  useFactory: (configService: ConfigService) =>
+    createTypeOrmDataSourceOptions({
+      nodeEnv: configService.get<string>('NODE_ENV') ?? 'local',
+      host: configService.getOrThrow<string>('DB_HOST'),
+      port: configService.getOrThrow<number>('DB_PORT'),
+      username: configService.getOrThrow<string>('DB_USERNAME'),
+      password: configService.getOrThrow<string>('DB_PASSWORD'),
+      database: configService.getOrThrow<string>('DB_NAME'),
+    }),
   inject: [ConfigService],
 };
