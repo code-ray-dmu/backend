@@ -70,4 +70,28 @@ describe('ApiExceptionFilter', () => {
       }),
     );
   });
+
+  it('preserves custom auth error codes from unauthorized failures', (): void => {
+    filter.catch(
+      new UnauthorizedException({
+        code: 'AUTH_INVALID_CREDENTIALS',
+        message: 'Invalid email or password',
+      }),
+      createArgumentsHost(),
+    );
+
+    expect(status).toHaveBeenCalledWith(401);
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: null,
+        meta: expect.objectContaining({
+          request_id: expect.any(String),
+        }),
+        error: {
+          code: 'AUTH_INVALID_CREDENTIALS',
+          message: 'Invalid email or password',
+        },
+      }),
+    );
+  });
 });
