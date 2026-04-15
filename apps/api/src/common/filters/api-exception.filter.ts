@@ -7,6 +7,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
@@ -16,12 +17,21 @@ import { ensureRequestId } from '../utils';
 @Injectable()
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(ApiExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const context = host.switchToHttp();
     const response = context.getResponse<Response>();
     const request = context.getRequest<Request>();
     const requestId = ensureRequestId(request);
     const { status, error } = this.resolveErrorResponse(exception);
+
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      this.logger.error(
+        `Unhandled API exception: ${request.method} ${request.url} requestId=${requestId}`,
+        this.getErrorTrace(exception),
+      );
+    }
 
     response.status(status).json({
       data: null,
@@ -148,5 +158,13 @@ export class ApiExceptionFilter implements ExceptionFilter {
       default:
         return `HTTP_${status}`;
     }
+  }
+
+  private getErrorTrace(exception: unknown): string {
+    if (exception instanceof Error) {
+      return exception.stack ?? exception.message;
+    }
+
+    return JSON.stringify(exception);
   }
 }

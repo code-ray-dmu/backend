@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AnalysisRunStatus, AnalysisStage } from '@app/core';
 import { AnalysisRequestPayload } from '@app/contracts';
@@ -17,6 +18,7 @@ describe('AnalysisRunJob', () => {
   let redisService: jest.Mocked<RedisService>;
   let githubRepositoryProcessor: jest.Mocked<GithubRepositoryProcessor>;
   let llmAnalysisProcessor: jest.Mocked<LlmAnalysisProcessor>;
+  let loggerErrorSpy: jest.SpyInstance;
 
   const payload: AnalysisRequestPayload = {
     analysisRunId: 'run-1',
@@ -27,6 +29,7 @@ describe('AnalysisRunJob', () => {
   };
 
   beforeEach(() => {
+    loggerErrorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
     analysisRunsRepository = {
       findById: jest.fn(),
       markCompleted: jest.fn(),
@@ -67,6 +70,10 @@ describe('AnalysisRunJob', () => {
       githubRepositoryProcessor,
       llmAnalysisProcessor,
     );
+  });
+
+  afterEach(() => {
+    loggerErrorSpy.mockRestore();
   });
 
   it('orchestrates all stages and completes analysis run with a single lock lifecycle', async () => {
@@ -189,6 +196,10 @@ describe('AnalysisRunJob', () => {
     expect(finalProgress.currentStage).toBe(AnalysisStage.REPO_LIST);
     expect(redisService.delete).toHaveBeenCalledWith(
       buildAnalysisRunLockCacheKey('repository-1'),
+    );
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Analysis run failed: analysisRunId=run-1 repositoryId=repository-1'),
+      expect.stringContaining('Analysis run run-1 not found'),
     );
   });
 

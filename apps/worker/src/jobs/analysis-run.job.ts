@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AnalysisRequestPayload } from '@app/contracts';
 import { AnalysisRunStatus, AnalysisStage } from '@app/core';
@@ -14,6 +14,8 @@ import { AnalysisRunProgressDto } from './dto';
 
 @Injectable()
 export class AnalysisRunJob {
+  private readonly logger = new Logger(AnalysisRunJob.name);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly analysisRunsRepository: AnalysisRunsRepository,
@@ -136,6 +138,10 @@ export class AnalysisRunJob {
       });
     } catch (error) {
       const failureReason = error instanceof Error ? error.message : 'Unknown analysis worker error';
+      this.logger.error(
+        `Analysis run failed: analysisRunId=${payload.analysisRunId} repositoryId=${payload.repositoryId} reason=${failureReason}`,
+        error instanceof Error ? error.stack : String(error),
+      );
       await this.analysisRunsRepository.markFailed(payload.analysisRunId, failureReason);
       await this.saveProgress({
         currentStage: await this.getCurrentStage(payload.analysisRunId),

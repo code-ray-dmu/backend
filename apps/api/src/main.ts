@@ -1,9 +1,11 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/filters';
 import { ApiResponseEnvelopeInterceptor } from './common/interceptors';
+
+const bootstrapLogger = new Logger('ApiBootstrap');
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -29,4 +31,10 @@ async function bootstrap(): Promise<void> {
   await app.listen(port);
 }
 
-void bootstrap();
+void bootstrap().catch((error: unknown) => {
+  bootstrapLogger.error(
+    'API bootstrap failed',
+    error instanceof Error ? error.stack : String(error),
+  );
+  process.exitCode = 1;
+});
