@@ -15,7 +15,11 @@ import {
   GroupNotFoundException,
 } from '../../common/exceptions';
 import { JwtAuthGuard } from '../auth/guards';
-import { CreateApplicantDto, GetApplicantsQueryDto } from './dto';
+import {
+  CreateApplicantDto,
+  GetApplicantQuestionsQueryDto,
+  GetApplicantsQueryDto,
+} from './dto';
 import { ApplicantsController } from './applicants.controller';
 import { ApplicantsFacade } from './applicants.facade';
 
@@ -31,6 +35,7 @@ describe('ApplicantsController', () => {
       getApplicants: jest.fn(),
       getApplicant: jest.fn(),
       requestQuestions: jest.fn(),
+      getApplicantQuestions: jest.fn(),
     } as unknown as jest.Mocked<ApplicantsFacade>;
 
     controller = new ApplicantsController(facade);
@@ -165,6 +170,61 @@ describe('ApplicantsController', () => {
     expect(facade.requestQuestions).toHaveBeenCalledWith(
       '550e8400-e29b-41d4-a716-446655440010',
       'user-1',
+    );
+  });
+
+  it('returns an enveloped body for GET /applicants/:applicantId/questions', async (): Promise<void> => {
+    const query = new GetApplicantQuestionsQueryDto();
+    query.page = 1;
+    query.size = 10;
+    query.sort = 'priority';
+    query.order = 'asc';
+
+    facade.getApplicantQuestions.mockResolvedValue({
+      items: [
+        {
+          question_id: 'question-1',
+          analysis_run_id: 'analysis-run-1',
+          category: 'SKILL',
+          question_text: 'What trade-off did you make?',
+          intent: 'Understand technical decision making',
+          priority: 1,
+        },
+      ],
+      total: 1,
+      page: 1,
+      size: 10,
+    });
+
+    await expect(
+      controller.getApplicantQuestions(
+        'user-1',
+        '550e8400-e29b-41d4-a716-446655440010',
+        query,
+      ),
+    ).resolves.toEqual({
+      __apiSuccessBody: true,
+      data: [
+        {
+          question_id: 'question-1',
+          analysis_run_id: 'analysis-run-1',
+          category: 'SKILL',
+          question_text: 'What trade-off did you make?',
+          intent: 'Understand technical decision making',
+          priority: 1,
+        },
+      ],
+      meta: {
+        page: 1,
+        size: 10,
+        total: 1,
+      },
+    });
+
+    expect(facade.getApplicantQuestions).toHaveBeenCalledWith(
+      '550e8400-e29b-41d4-a716-446655440010',
+      'user-1',
+      query,
     );
   });
 

@@ -5,6 +5,7 @@ import { ApiExceptionFilter } from '../../common/filters';
 import { ApiResponseEnvelopeInterceptor } from '../../common/interceptors';
 import { AnalysisRunsModule } from '../analysis-runs/analysis-runs.module';
 import { AuthModule } from '../auth/auth.module';
+import { GeneratedQuestionsModule } from '../generated-questions/generated-questions.module';
 import { GroupsModule } from '../groups/groups.module';
 import { ApplicantsController } from './applicants.controller';
 import { ApplicantsFacade } from './applicants.facade';
@@ -17,6 +18,7 @@ import { ApplicantsService } from './applicants.service';
     AuthModule,
     GroupsModule,
     AnalysisRunsModule,
+    GeneratedQuestionsModule,
   ],
   controllers: [ApplicantsController],
   providers: [

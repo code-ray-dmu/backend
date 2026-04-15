@@ -1265,3 +1265,115 @@ refresh token으로 access token을 재발급한다.
   }
 }
 ```
+
+## 10. GET /applicants/{applicantId}/questions
+
+### Base URL
+`/v1`
+
+### 목적
+특정 지원자 기준으로 생성된 면접 질문 목록을 조회한다.
+기본 정렬은 `priority asc`이며, `sort`/`order`로 변경할 수 있다.
+
+---
+
+### Request
+
+#### Path Parameter
+- `applicantId`: string (required)
+  - 지원자 ID
+
+#### Query Parameter
+- `page`: number | null (optional)
+  - 페이지 번호
+- `size`: number | null (optional)
+  - 페이지 크기
+- `sort`: string | null (optional)
+  - 정렬 필드 (`priority` 또는 `createdAt`, 기본값 `priority`)
+- `order`: string | null (optional)
+  - `asc` 또는 `desc` (기본값 `asc`)
+
+#### Body (JSON)
+없음
+
+---
+
+### Request Example
+
+```json
+{}
+```
+
+---
+
+### Response
+
+#### Success Response
+
+##### 구조
+
+* `data`: array
+  * `question_id`: string
+  * `analysis_run_id`: string
+  * `category`: string
+  * `question_text`: string
+  * `intent`: string | null
+  * `priority`: number | null
+* `meta`: object
+  * `page`: number
+  * `size`: number
+  * `total`: number
+  * `request_id`: string
+* `error`: null
+
+##### Example
+
+```json
+{
+  "data": [
+    {
+      "question_id": "550e8400-e29b-41d4-a716-446655440081",
+      "analysis_run_id": "550e8400-e29b-41d4-a716-446655440040",
+      "category": "SKILL",
+      "question_text": "What trade-off did you make in this implementation?",
+      "intent": "Understand technical decision making",
+      "priority": 1
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "size": 10,
+    "total": 1,
+    "request_id": "6f1d7e14-6d74-4c74-97b1-6ef7a7df0081"
+  },
+  "error": null
+}
+```
+
+#### Error Response
+
+##### 구조
+
+* `data`: null
+* `meta`: object
+  * `request_id`: string
+* `error`: object
+  * `code`: string
+  * `message`: string
+
+##### Example
+
+```json
+{
+  "data": null,
+  "meta": {
+    "request_id": "6f1d7e14-6d74-4c74-97b1-6ef7a7df0081"
+  },
+  "error": {
+    "code": "APPLICANT_NOT_FOUND",
+    "message": "Applicant not found"
+  }
+}
+```
+
+---

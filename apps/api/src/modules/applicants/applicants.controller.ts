@@ -13,6 +13,7 @@ import { ApiSuccessBody, createApiSuccessBody } from '../../common/dto';
 import { ApiExceptionFilter } from '../../common/filters';
 import { CreateAnalysisRunsResponseDto } from '../analysis-runs/dto';
 import { JwtAuthGuard } from '../auth/guards';
+import { GeneratedQuestionListItemDto } from '../generated-questions/dto';
 import { CurrentUserId } from '../groups/decorators/current-user-id.decorator';
 import {
   ApplicantDetailDto,
@@ -20,6 +21,7 @@ import {
   ApplicantsPageResultDto,
   CreateApplicantDto,
   CreateApplicantResultDto,
+  GetApplicantQuestionsQueryDto,
   GetApplicantsQueryDto,
 } from './dto';
 import { ApplicantsFacade } from './applicants.facade';
@@ -72,5 +74,20 @@ export class ApplicantsController {
     const result = await this.applicantsFacade.requestQuestions(applicantId, userId);
 
     return createApiSuccessBody(result);
+  }
+
+  @Get(':applicantId/questions')
+  async getApplicantQuestions(
+    @CurrentUserId() userId: string,
+    @Param('applicantId', new ParseUUIDPipe()) applicantId: string,
+    @Query() query: GetApplicantQuestionsQueryDto,
+  ): Promise<ApiSuccessBody<GeneratedQuestionListItemDto[]>> {
+    const result = await this.applicantsFacade.getApplicantQuestions(applicantId, userId, query);
+
+    return createApiSuccessBody(result.items, {
+      page: result.page,
+      size: result.size,
+      total: result.total,
+    });
   }
 }

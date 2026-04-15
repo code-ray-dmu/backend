@@ -4,6 +4,7 @@ import { MODULE_METADATA } from '@nestjs/common/constants';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AnalysisRunsModule } from '../analysis-runs/analysis-runs.module';
 import { AuthModule } from '../auth/auth.module';
+import { GeneratedQuestionsModule } from '../generated-questions/generated-questions.module';
 import { GroupsModule } from '../groups/groups.module';
 import { ApplicantsController } from './applicants.controller';
 import { ApplicantsFacade } from './applicants.facade';
@@ -43,6 +44,7 @@ describe('ApplicantsModule', () => {
         AuthModule,
         GroupsModule,
         AnalysisRunsModule,
+        GeneratedQuestionsModule,
       ]),
     );
     expect(providers).toEqual(

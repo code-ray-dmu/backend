@@ -1,14 +1,22 @@
-import { Injectable, NotImplementedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   GeneratedQuestionsListResultDto,
   GetGeneratedQuestionsForApplicantQuery,
+  toGeneratedQuestionsListResultDto,
 } from './dto';
+import { GeneratedQuestionsRepository } from './repositories/generated-questions.repository';
 
 @Injectable()
 export class GeneratedQuestionsService {
+  constructor(
+    private readonly generatedQuestionsRepository: GeneratedQuestionsRepository,
+  ) {}
+
   async getQuestionsForApplicant(
-    _query: GetGeneratedQuestionsForApplicantQuery,
+    query: GetGeneratedQuestionsForApplicantQuery,
   ): Promise<GeneratedQuestionsListResultDto> {
-    throw new NotImplementedException('Applicant question lookup is not implemented yet.');
+    const result = await this.generatedQuestionsRepository.getQuestionsForApplicant(query);
+
+    return toGeneratedQuestionsListResultDto(result);
   }
 }

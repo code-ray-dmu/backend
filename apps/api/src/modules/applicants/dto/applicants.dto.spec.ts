@@ -12,6 +12,7 @@ import {
   toApplicantsPageResultDto,
 } from './applicant-read.dto';
 import { CreateApplicantDto, GITHUB_PROFILE_URL_REGEX } from './create-applicant.dto';
+import { GetApplicantQuestionsQueryDto } from './get-applicant-questions-query.dto';
 import { GetApplicantsQueryDto } from './get-applicants-query.dto';
 
 describe('Applicants DTO validation', () => {
@@ -114,6 +115,55 @@ describe('Applicants DTO validation', () => {
     const errors = await validate(dto);
 
     expect(errors.some((error) => error.property === 'sort')).toBe(true);
+  });
+
+  it('applies default pagination and sorting values for GET /applicants/:applicantId/questions', (): void => {
+    const dto = plainToInstance(GetApplicantQuestionsQueryDto, {});
+
+    expect(dto.page).toBe(1);
+    expect(dto.size).toBe(20);
+    expect(dto.sort).toBe('priority');
+    expect(dto.order).toBe('asc');
+  });
+
+  it('rejects GET /applicants/:applicantId/questions query when sort is unsupported', async (): Promise<void> => {
+    const dto = plainToInstance(GetApplicantQuestionsQueryDto, {
+      sort: 'updatedAt',
+    });
+
+    const errors = await validate(dto);
+
+    expect(errors.some((error) => error.property === 'sort')).toBe(true);
+  });
+
+  it('rejects GET /applicants/:applicantId/questions query when page is less than 1', async (): Promise<void> => {
+    const dto = plainToInstance(GetApplicantQuestionsQueryDto, {
+      page: 0,
+    });
+
+    const errors = await validate(dto);
+
+    expect(errors.some((error) => error.property === 'page')).toBe(true);
+  });
+
+  it('rejects GET /applicants/:applicantId/questions query when size is less than 1', async (): Promise<void> => {
+    const dto = plainToInstance(GetApplicantQuestionsQueryDto, {
+      size: 0,
+    });
+
+    const errors = await validate(dto);
+
+    expect(errors.some((error) => error.property === 'size')).toBe(true);
+  });
+
+  it('rejects GET /applicants/:applicantId/questions query when order is unsupported', async (): Promise<void> => {
+    const dto = plainToInstance(GetApplicantQuestionsQueryDto, {
+      order: 'up',
+    });
+
+    const errors = await validate(dto);
+
+    expect(errors.some((error) => error.property === 'order')).toBe(true);
   });
 
   it('maps applicant entities to response dto shapes', (): void => {

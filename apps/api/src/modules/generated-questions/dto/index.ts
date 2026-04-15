@@ -1,3 +1,5 @@
+import { GeneratedQuestionsEntity } from '@app/database';
+
 export const GENERATED_QUESTIONS_SORT_FIELDS = ['createdAt', 'priority'] as const;
 export const GENERATED_QUESTIONS_SORT_ORDERS = ['asc', 'desc'] as const;
 
@@ -27,3 +29,30 @@ export interface GeneratedQuestionsListResultDto {
   page: number;
   size: number;
 }
+
+export interface GeneratedQuestionsListResult {
+  items: GeneratedQuestionsEntity[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export const toGeneratedQuestionListItemDto = (
+  question: GeneratedQuestionsEntity,
+): GeneratedQuestionListItemDto => ({
+  question_id: question.id,
+  analysis_run_id: question.analysisRunId,
+  category: question.category,
+  question_text: question.questionText,
+  intent: question.intent ?? null,
+  priority: question.priority ?? null,
+});
+
+export const toGeneratedQuestionsListResultDto = (
+  result: GeneratedQuestionsListResult,
+): GeneratedQuestionsListResultDto => ({
+  items: result.items.map(toGeneratedQuestionListItemDto),
+  total: result.total,
+  page: result.page,
+  size: result.size,
+});
