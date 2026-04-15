@@ -51,12 +51,12 @@ describe('ApplicantsFacade', () => {
   it('delegates question creation to the analysis runs facade', async (): Promise<void> => {
     analysisRunsFacade.requestAnalysisRuns.mockResolvedValue({
       success: true,
-      analysisRunIds: ['run-1'],
+      analysis_run_ids: ['run-1'],
     });
 
     await expect(facade.requestQuestions('applicant-1', 'user-1')).resolves.toEqual({
       success: true,
-      analysisRunIds: ['run-1'],
+      analysis_run_ids: ['run-1'],
     });
 
     expect(analysisRunsFacade.requestAnalysisRuns).toHaveBeenCalledWith('applicant-1', 'user-1');

@@ -148,7 +148,7 @@ describe('ApplicantsController', () => {
   it('returns an enveloped body for POST /applicants/:applicantId/questions', async (): Promise<void> => {
     facade.requestQuestions.mockResolvedValue({
       success: true,
-      analysisRunIds: ['run-1', 'run-2'],
+      analysis_run_ids: ['run-1', 'run-2'],
     });
 
     await expect(
@@ -157,7 +157,7 @@ describe('ApplicantsController', () => {
       __apiSuccessBody: true,
       data: {
         success: true,
-        analysisRunIds: ['run-1', 'run-2'],
+        analysis_run_ids: ['run-1', 'run-2'],
       },
       meta: undefined,
     });

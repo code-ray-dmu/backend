@@ -1,4 +1,5 @@
 import { AnalysisRunStatus, AnalysisStage } from '@app/core';
+import { ApiSuccessBody } from '../../../common/dto';
 
 export interface AnalysisRunListItemResponseDto {
   analysis_run_id: string;
@@ -11,11 +12,6 @@ export interface AnalysisRunListItemResponseDto {
   failure_reason?: string | null;
 }
 
-export interface GetAnalysisRunsResponseDto {
-  data: AnalysisRunListItemResponseDto[];
-  meta: {
-    page: number;
-    size: number;
-    total: number;
-  };
-}
+export type GetAnalysisRunsResponseDto = ApiSuccessBody<
+  AnalysisRunListItemResponseDto[]
+>;

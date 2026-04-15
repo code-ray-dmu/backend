@@ -101,7 +101,7 @@ describe('AnalysisRunsService', () => {
 
     expect(result).toEqual({
       success: true,
-      analysisRunIds: ['run-repo-2'],
+      analysis_run_ids: ['run-repo-2'],
     });
     expect(analysisRunPublisher.publishRequested).toHaveBeenCalledTimes(1);
   });
@@ -165,6 +165,7 @@ describe('AnalysisRunsService', () => {
     ]);
 
     await expect(service.getAnalysisRuns({}, 'user-1')).resolves.toEqual({
+      __apiSuccessBody: true,
       data: [
         {
           analysis_run_id: 'run-1',
@@ -284,7 +285,7 @@ describe('AnalysisRunsService', () => {
 
     await expect(service.requestAnalysisRuns('applicant-1', 'user-1')).resolves.toEqual({
       success: true,
-      analysisRunIds: ['run-repo-1'],
+      analysis_run_ids: ['run-repo-1'],
     });
 
     expect(analysisRunsRepository.markFailedByIds).toHaveBeenCalledWith(['run-repo-2'], 'publish failed');

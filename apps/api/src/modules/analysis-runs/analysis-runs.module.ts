@@ -5,7 +5,7 @@ import {
   ApplicantRepositoriesEntity,
   ApplicantsEntity,
 } from '@app/database';
-import { GitHubModule } from '@app/integrations';
+import { GitHubModule, RabbitMqModule } from '@app/integrations';
 import { AnalysisRunsController } from './analysis-runs.controller';
 import { AnalysisRunsFacade } from './analysis-runs.facade';
 import { AnalysisRunPublisher } from './publishers/analysis-run.publisher';
@@ -22,6 +22,7 @@ import { AnalysisRunsService } from './analysis-runs.service';
       ApplicantRepositoriesEntity,
     ]),
     GitHubModule,
+    RabbitMqModule,
   ],
   controllers: [AnalysisRunsController],
   providers: [
