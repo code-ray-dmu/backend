@@ -63,7 +63,7 @@ describe('AuthController', () => {
     });
   });
 
-  it('wraps sign-up responses in the API envelope', async () => {
+  it('returns sign-up data for the global API envelope', async () => {
     await expect(
       controller.signUp({
         email: 'john@example.com',
@@ -71,14 +71,8 @@ describe('AuthController', () => {
         name: 'john',
       }),
     ).resolves.toEqual({
-      data: {
-        user_id: 'user-id',
-        email: 'john@example.com',
-      },
-      meta: {
-        request_id: expect.any(String),
-      },
-      error: null,
+      user_id: 'user-id',
+      email: 'john@example.com',
     });
   });
 
@@ -97,25 +91,19 @@ describe('AuthController', () => {
     expect(facade.refreshToken).toHaveBeenCalledWith(request.user);
   });
 
-  it('wraps sign-in responses in the API envelope', async () => {
+  it('returns sign-in data for the global API envelope', async () => {
     await expect(
       controller.signIn({
         email: 'john@example.com',
         password: '1234',
       }),
     ).resolves.toEqual({
-      data: {
-        access_token: 'access-token',
-        refresh_token: 'refresh-token',
-      },
-      meta: {
-        request_id: expect.any(String),
-      },
-      error: null,
+      access_token: 'access-token',
+      refresh_token: 'refresh-token',
     });
   });
 
-  it('wraps refresh-token responses in the API envelope', async () => {
+  it('returns refresh-token data for the global API envelope', async () => {
     await expect(
       controller.refreshToken({
         refreshToken: 'refresh-token',
@@ -128,14 +116,8 @@ describe('AuthController', () => {
         },
       }),
     ).resolves.toEqual({
-      data: {
-        access_token: 'new-access-token',
-        refresh_token: 'new-refresh-token',
-      },
-      meta: {
-        request_id: expect.any(String),
-      },
-      error: null,
+      access_token: 'new-access-token',
+      refresh_token: 'new-refresh-token',
     });
   });
 });

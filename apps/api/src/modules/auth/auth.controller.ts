@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import {
   Body,
   Controller,
@@ -19,31 +17,19 @@ import { AuthTokenPair, SignUpResult } from './auth.service';
 import { JwtRefreshGuard } from './guards';
 import { RefreshTokenAuthContext } from './interfaces';
 
-interface AuthApiResponse<TData> {
-  data: TData;
-  meta: {
-    request_id: string;
-  };
-  error: null;
-}
-
 @Controller('users')
 export class AuthController {
   constructor(private readonly authFacade: AuthFacade) {}
 
   @Post('sign-up')
-  async signUp(@Body() body: SignUpDto): Promise<AuthApiResponse<SignUpResult>> {
-    const data = await this.authFacade.signUp(body);
-
-    return createAuthApiResponse(data);
+  async signUp(@Body() body: SignUpDto): Promise<SignUpResult> {
+    return this.authFacade.signUp(body);
   }
 
   @Post('sign-in')
   @HttpCode(HttpStatus.OK)
-  async signIn(@Body() body: SignInDto): Promise<AuthApiResponse<AuthTokenPair>> {
-    const data = await this.authFacade.signIn(body);
-
-    return createAuthApiResponse(data);
+  async signIn(@Body() body: SignInDto): Promise<AuthTokenPair> {
+    return this.authFacade.signIn(body);
   }
 
   @Post('refresh-token')
@@ -52,20 +38,8 @@ export class AuthController {
   async refreshToken(
     @Body() body: RefreshTokenDto,
     @Req() request: { user: RefreshTokenAuthContext },
-  ): Promise<AuthApiResponse<AuthTokenPair>> {
+  ): Promise<AuthTokenPair> {
     void body;
-    const data = await this.authFacade.refreshToken(request.user);
-
-    return createAuthApiResponse(data);
+    return this.authFacade.refreshToken(request.user);
   }
-}
-
-function createAuthApiResponse<TData>(data: TData): AuthApiResponse<TData> {
-  return {
-    data,
-    meta: {
-      request_id: randomUUID(),
-    },
-    error: null,
-  };
 }
