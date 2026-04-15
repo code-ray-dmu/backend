@@ -67,11 +67,15 @@ export class OpenAiProviderAdapter implements LlmProviderAdapter {
     temperature: number;
   }): Promise<{ content: string }> {
     try {
+      const isTemperatureSupported = !this.config.model.includes('nano');
+
       const completion = await this.client.chat.completions.create({
         messages: this.buildMessages(input.prompt),
         model: this.config.model,
         response_format: input.responseFormat,
-        temperature: input.temperature,
+        ...(isTemperatureSupported && {
+          temperature: input.temperature,
+        }),
       });
 
       const content = completion.choices[0]?.message?.content?.trim();
