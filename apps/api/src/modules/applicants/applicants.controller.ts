@@ -8,11 +8,9 @@ import {
   Query,
   UseFilters,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
 import { ApiSuccessBody, createApiSuccessBody } from '../../common/dto';
 import { ApiExceptionFilter } from '../../common/filters';
-import { ApiResponseEnvelopeInterceptor } from '../../common/interceptors';
 import { CreateAnalysisRunsResponseDto } from '../analysis-runs/dto';
 import { JwtAuthGuard } from '../auth/guards';
 import { CurrentUserId } from '../groups/decorators/current-user-id.decorator';
@@ -28,7 +26,6 @@ import { ApplicantsFacade } from './applicants.facade';
 
 @UseFilters(ApiExceptionFilter)
 @UseGuards(JwtAuthGuard)
-@UseInterceptors(ApiResponseEnvelopeInterceptor)
 @Controller('applicants')
 export class ApplicantsController {
   constructor(private readonly applicantsFacade: ApplicantsFacade) {}
