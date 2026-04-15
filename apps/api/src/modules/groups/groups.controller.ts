@@ -7,12 +7,10 @@ import {
   Query,
   UseFilters,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
 import { ApiSuccessBody } from '../../common/dto';
 import { createApiSuccessBody } from '../../common/dto';
 import { ApiExceptionFilter } from '../../common/filters';
-import { ApiResponseEnvelopeInterceptor } from '../../common/interceptors';
 import { JwtAuthGuard } from '../auth/guards';
 import {
   CreateGroupDto,
@@ -26,7 +24,6 @@ import { GroupsFacade } from './groups.facade';
 
 @UseFilters(ApiExceptionFilter)
 @UseGuards(JwtAuthGuard)
-@UseInterceptors(ApiResponseEnvelopeInterceptor)
 @Controller('groups')
 export class GroupsController {
   constructor(private readonly groupsFacade: GroupsFacade) {}

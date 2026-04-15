@@ -6,7 +6,6 @@ import {
   INTERCEPTORS_METADATA,
 } from '@nestjs/common/constants';
 import { ApiExceptionFilter } from '../../common/filters';
-import { ApiResponseEnvelopeInterceptor } from '../../common/interceptors';
 import { JwtAuthGuard } from '../auth/guards';
 import { CreateGroupDto, GetGroupsQueryDto } from './dto';
 import { GroupsFacade } from './groups.facade';
@@ -38,7 +37,7 @@ describe('GroupsController', () => {
     ) as Array<new () => unknown>;
 
     expect(guards).toContain(JwtAuthGuard);
-    expect(interceptors).toContain(ApiResponseEnvelopeInterceptor);
+    expect(interceptors ?? []).toHaveLength(0);
     expect(filters).toContain(ApiExceptionFilter);
   });
 
