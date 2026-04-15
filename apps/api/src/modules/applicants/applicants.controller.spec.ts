@@ -53,7 +53,7 @@ describe('ApplicantsController', () => {
     ) as Array<new () => unknown>;
 
     expect(guards).toContain(JwtAuthGuard);
-    expect(interceptors).toContain(ApiResponseEnvelopeInterceptor);
+    expect(interceptors ?? []).toHaveLength(0);
     expect(filters).toContain(ApiExceptionFilter);
   });
 
