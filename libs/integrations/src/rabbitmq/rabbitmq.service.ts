@@ -62,36 +62,37 @@ export class RabbitMqService implements OnModuleDestroy {
   }
 
   private async ensureAnalysisRunTopology(channel: Channel): Promise<void> {
-    await channel.assertExchange(RABBITMQ_EXCHANGES.ANALYSIS_RUNS, 'topic', {
+    await channel.assertExchange(RABBITMQ_EXCHANGES.ANALYSIS_REQUEST, 'topic', {
       durable: true,
     });
-    await channel.assertQueue(RABBITMQ_QUEUES.ANALYSIS_REQUESTS, {
+    await channel.assertQueue(RABBITMQ_QUEUES.ANALYSIS_REQUEST, {
       durable: true,
-      deadLetterExchange: RABBITMQ_EXCHANGES.ANALYSIS_RUNS,
-      deadLetterRoutingKey: RABBITMQ_ROUTING_KEYS.ANALYSIS_RUN_RETRY,
+      deadLetterExchange: RABBITMQ_EXCHANGES.ANALYSIS_REQUEST,
+      deadLetterRoutingKey: RABBITMQ_ROUTING_KEYS.PHASE4_ANALYSIS_RETRY,
     });
-    await channel.assertQueue(RABBITMQ_QUEUES.ANALYSIS_RETRY, {
+    // Phase 3 범위 밖이지만, Phase 4 운영 전환 시 재활용할 토폴로지를 함께 선언한다.
+    await channel.assertQueue(RABBITMQ_QUEUES.PHASE4_ANALYSIS_RETRY, {
       durable: true,
-      deadLetterExchange: RABBITMQ_EXCHANGES.ANALYSIS_RUNS,
-      deadLetterRoutingKey: RABBITMQ_ROUTING_KEYS.ANALYSIS_RUN_DEAD_LETTER,
+      deadLetterExchange: RABBITMQ_EXCHANGES.ANALYSIS_REQUEST,
+      deadLetterRoutingKey: RABBITMQ_ROUTING_KEYS.PHASE4_ANALYSIS_DEAD_LETTER,
     });
-    await channel.assertQueue(RABBITMQ_QUEUES.ANALYSIS_DEAD_LETTER, {
+    await channel.assertQueue(RABBITMQ_QUEUES.PHASE4_ANALYSIS_DEAD_LETTER, {
       durable: true,
     });
     await channel.bindQueue(
-      RABBITMQ_QUEUES.ANALYSIS_REQUESTS,
-      RABBITMQ_EXCHANGES.ANALYSIS_RUNS,
-      RABBITMQ_ROUTING_KEYS.ANALYSIS_RUN_REQUESTED,
+      RABBITMQ_QUEUES.ANALYSIS_REQUEST,
+      RABBITMQ_EXCHANGES.ANALYSIS_REQUEST,
+      RABBITMQ_ROUTING_KEYS.ANALYSIS_REQUEST,
     );
     await channel.bindQueue(
-      RABBITMQ_QUEUES.ANALYSIS_RETRY,
-      RABBITMQ_EXCHANGES.ANALYSIS_RUNS,
-      RABBITMQ_ROUTING_KEYS.ANALYSIS_RUN_RETRY,
+      RABBITMQ_QUEUES.PHASE4_ANALYSIS_RETRY,
+      RABBITMQ_EXCHANGES.ANALYSIS_REQUEST,
+      RABBITMQ_ROUTING_KEYS.PHASE4_ANALYSIS_RETRY,
     );
     await channel.bindQueue(
-      RABBITMQ_QUEUES.ANALYSIS_DEAD_LETTER,
-      RABBITMQ_EXCHANGES.ANALYSIS_RUNS,
-      RABBITMQ_ROUTING_KEYS.ANALYSIS_RUN_DEAD_LETTER,
+      RABBITMQ_QUEUES.PHASE4_ANALYSIS_DEAD_LETTER,
+      RABBITMQ_EXCHANGES.ANALYSIS_REQUEST,
+      RABBITMQ_ROUTING_KEYS.PHASE4_ANALYSIS_DEAD_LETTER,
     );
   }
 

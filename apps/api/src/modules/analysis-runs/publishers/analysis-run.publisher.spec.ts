@@ -25,15 +25,15 @@ describe('AnalysisRunPublisher', () => {
 
     expect(rabbitMqService.publish).toHaveBeenCalledTimes(1);
     expect(rabbitMqService.publish).toHaveBeenCalledWith(
-      RABBITMQ_EXCHANGES.ANALYSIS_RUNS,
-      RABBITMQ_ROUTING_KEYS.ANALYSIS_RUN_REQUESTED,
-      expect.objectContaining({
+      RABBITMQ_EXCHANGES.ANALYSIS_REQUEST,
+      RABBITMQ_ROUTING_KEYS.ANALYSIS_REQUEST,
+      {
         analysisRunId: 'run-1',
         applicantId: 'applicant-1',
         repositoryId: 'repository-1',
         requestedByUserId: 'user-1',
         requestedAt: expect.any(String),
-      }),
+      },
     );
   });
 });

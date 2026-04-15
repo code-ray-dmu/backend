@@ -12,7 +12,10 @@ import {
 } from '@app/database';
 import {
   LlmParserService,
+  LLM_RESPONSE_PARSE_FAILED,
   LlmService,
+  PROMPT_TEMPLATE_ACTIVE_AMBIGUOUS,
+  PROMPT_TEMPLATE_NOT_FOUND,
   PromptBuilderService,
   type CodeSummaryReport,
   type GeneratedQuestionDraft,
@@ -213,6 +216,112 @@ describe('LlmAnalysisProcessor', () => {
     expect(result).toEqual(['src/main.ts']);
   });
 
+  it('propagates parse identifier when file selection response is malformed', async () => {
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'analysis.maxAnalysisFiles') {
+        return 4;
+      }
+
+      return undefined;
+    });
+    promptTemplatesRepository.find.mockResolvedValue([
+      createPromptTemplateEntity('file_selection'),
+    ]);
+    promptBuilderService.buildPrompt.mockReturnValue({
+      prompt: 'prompt:file-selection',
+      template: createPromptTemplateRecord('file_selection'),
+    });
+    llmService.selectFiles.mockResolvedValue({
+      content: '{',
+    });
+    llmParserService.parseFileSelection.mockImplementation(() => {
+      throw new Error(
+        `${LLM_RESPONSE_PARSE_FAILED}: stage=file_selection detail=Unexpected end of JSON input`,
+      );
+    });
+
+    await expect(
+      processor.selectFiles({
+        analysisRunId: 'run-1',
+        filePaths: ['src/main.ts', 'src/app.ts'],
+      }),
+    ).rejects.toThrow(
+      `${LLM_RESPONSE_PARSE_FAILED}: stage=file_selection detail=Unexpected end of JSON input`,
+    );
+
+    expect(llmMessagesRepository.save).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        analysisRunId: 'run-1',
+        content: 'prompt:file-selection',
+        role: LlmMessageRole.USER,
+        stage: AnalysisStage.FOLDER_STRUCTURE,
+      }),
+    );
+    expect(llmMessagesRepository.save).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        analysisRunId: 'run-1',
+        content: '{',
+        role: LlmMessageRole.ASSISTANT,
+        stage: AnalysisStage.FOLDER_STRUCTURE,
+      }),
+    );
+  });
+
+  it('propagates parse identifier when file selection result is empty', async () => {
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'analysis.maxAnalysisFiles') {
+        return 4;
+      }
+
+      return undefined;
+    });
+    promptTemplatesRepository.find.mockResolvedValue([
+      createPromptTemplateEntity('file_selection'),
+    ]);
+    promptBuilderService.buildPrompt.mockReturnValue({
+      prompt: 'prompt:file-selection',
+      template: createPromptTemplateRecord('file_selection'),
+    });
+    llmService.selectFiles.mockResolvedValue({
+      content: '[]',
+    });
+    llmParserService.parseFileSelection.mockImplementation(() => {
+      throw new Error(
+        `${LLM_RESPONSE_PARSE_FAILED}: stage=file_selection detail=no valid file paths`,
+      );
+    });
+
+    await expect(
+      processor.selectFiles({
+        analysisRunId: 'run-1',
+        filePaths: ['src/main.ts', 'src/app.ts'],
+      }),
+    ).rejects.toThrow(
+      `${LLM_RESPONSE_PARSE_FAILED}: stage=file_selection detail=no valid file paths`,
+    );
+
+    expect(llmMessagesRepository.save).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        analysisRunId: 'run-1',
+        content: 'prompt:file-selection',
+        role: LlmMessageRole.USER,
+        stage: AnalysisStage.FOLDER_STRUCTURE,
+      }),
+    );
+    expect(llmMessagesRepository.save).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        analysisRunId: 'run-1',
+        content: '[]',
+        role: LlmMessageRole.ASSISTANT,
+        stage: AnalysisStage.FOLDER_STRUCTURE,
+      }),
+    );
+  });
+
   it('summarizes code and upserts the raw analysis report', async () => {
     const parsedReport = createCodeSummaryReport();
 
@@ -276,13 +385,13 @@ describe('LlmAnalysisProcessor', () => {
       analysisRunId: 'run-1',
       applicantId: 'applicant-1',
       id: 'analysis-1',
-      rawAnalysisReport: '{"summary":"overall"}',
+      rawAnalysisReport: '{"summary":"overall"}  ',
     });
     expect(codeAnalysisRepository.save).toHaveBeenCalledWith({
       analysisRunId: 'run-1',
       applicantId: 'applicant-1',
       id: 'analysis-1',
-      rawAnalysisReport: '{"summary":"overall"}',
+      rawAnalysisReport: '{"summary":"overall"}  ',
     });
     expect(llmMessagesRepository.save).toHaveBeenNthCalledWith(
       1,
@@ -386,8 +495,26 @@ describe('LlmAnalysisProcessor', () => {
     });
     expect(llmParserService.parseGeneratedQuestions).toHaveBeenCalledWith({
       content: '[{"questionText":"How did you design this API?"}]',
-      maxQuestionsPerAnalysisRun: 5,
+      maxQuestionsPerAnalysisRun: Number.MAX_SAFE_INTEGER,
     });
+    expect(llmMessagesRepository.save).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        analysisRunId: 'run-1',
+        content: 'prompt:question-generation',
+        role: LlmMessageRole.USER,
+        stage: AnalysisStage.QUESTION_GENERATION,
+      }),
+    );
+    expect(llmMessagesRepository.save).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        analysisRunId: 'run-1',
+        content: '[{"questionText":"How did you design this API?"}]',
+        role: LlmMessageRole.ASSISTANT,
+        stage: AnalysisStage.QUESTION_GENERATION,
+      }),
+    );
     expect(deleteMock).toHaveBeenCalledWith(GeneratedQuestionsEntity, {
       analysisRunId: 'run-1',
     });
@@ -395,10 +522,10 @@ describe('LlmAnalysisProcessor', () => {
       {
         analysisRunId: 'run-1',
         applicantId: 'applicant-1',
-        category: GeneratedQuestionCategory.SKILL,
-        intent: 'Assess API design depth',
-        priority: 3,
-        questionText: 'How did you design this API?',
+        category: GeneratedQuestionCategory.CULTURE_FIT,
+        intent: 'Check collaboration style',
+        priority: 1,
+        questionText: '  how did you design this api? ',
       },
       {
         analysisRunId: 'run-1',
@@ -411,16 +538,124 @@ describe('LlmAnalysisProcessor', () => {
     ]);
     expect(result).toEqual([
       {
-        category: GeneratedQuestionCategory.SKILL,
-        intent: 'Assess API design depth',
-        priority: 3,
-        questionText: 'How did you design this API?',
+        category: GeneratedQuestionCategory.CULTURE_FIT,
+        intent: 'Check collaboration style',
+        priority: 1,
+        questionText: '  how did you design this api? ',
       },
       {
         category: GeneratedQuestionCategory.CULTURE_FIT,
         intent: 'Check ownership',
         priority: 2,
         questionText: 'What trade-offs did you own here?',
+      },
+    ]);
+  });
+
+  it('stores top N by priority after deduplication', async () => {
+    const parsedQuestions: GeneratedQuestionDraft[] = [
+      {
+        category: GeneratedQuestionCategory.CULTURE_FIT,
+        intent: 'duplicate-low-priority',
+        priority: 4,
+        questionText: 'explain service boundaries.',
+      },
+      {
+        category: GeneratedQuestionCategory.SKILL,
+        intent: 'duplicate-high-priority',
+        priority: 0,
+        questionText: 'Explain service boundaries.',
+      },
+      {
+        category: GeneratedQuestionCategory.SKILL,
+        intent: 'second',
+        priority: 2,
+        questionText: 'How do you manage retries?',
+      },
+      {
+        category: GeneratedQuestionCategory.CULTURE_FIT,
+        intent: 'third',
+        priority: 3,
+        questionText: 'How do you document decisions?',
+      },
+    ];
+    const deleteMock = jest.fn();
+    const saveMock = jest.fn();
+    const createMock = jest.fn((_: unknown, value: unknown) => value);
+
+    configService.get.mockImplementation((key: string) => {
+      if (key === 'analysis.maxQuestionsPerAnalysisRun') {
+        return 2;
+      }
+
+      return undefined;
+    });
+    promptTemplatesRepository.find.mockResolvedValue([
+      createPromptTemplateEntity('question_generation'),
+    ]);
+    promptBuilderService.buildPrompt.mockReturnValue({
+      prompt: 'prompt:question-generation',
+      template: createPromptTemplateRecord('question_generation'),
+    });
+    codeAnalysisRepository.findOne.mockResolvedValue({
+      rawAnalysisReport: '{"summary":"overall"}',
+    } as CodeAnalysisEntity);
+    llmService.generateQuestions.mockResolvedValue({
+      content: '[{"questionText":"Explain service boundaries."}]',
+    });
+    llmParserService.parseGeneratedQuestions.mockReturnValue(parsedQuestions);
+    generatedQuestionsRepository.manager.transaction.mockImplementation(
+      async (callback: (entityManager: {
+        create: jest.Mock;
+        delete: jest.Mock;
+        save: jest.Mock;
+      }) => Promise<void>) => {
+        await callback({
+          create: createMock,
+          delete: deleteMock,
+          save: saveMock,
+        });
+      },
+    );
+
+    const result = await processor.generateQuestions({
+      analysisRunId: 'run-1',
+    });
+
+    expect(llmParserService.parseGeneratedQuestions).toHaveBeenCalledWith({
+      content: '[{"questionText":"Explain service boundaries."}]',
+      maxQuestionsPerAnalysisRun: Number.MAX_SAFE_INTEGER,
+    });
+    expect(saveMock).toHaveBeenCalledWith(GeneratedQuestionsEntity, [
+      {
+        analysisRunId: 'run-1',
+        applicantId: 'applicant-1',
+        category: GeneratedQuestionCategory.SKILL,
+        intent: 'duplicate-high-priority',
+        priority: 0,
+        questionText: 'Explain service boundaries.',
+      },
+      {
+        analysisRunId: 'run-1',
+        applicantId: 'applicant-1',
+        category: GeneratedQuestionCategory.SKILL,
+        intent: 'second',
+        priority: 2,
+        questionText: 'How do you manage retries?',
+      },
+    ]);
+    expect(result).toEqual([
+      {
+        category: GeneratedQuestionCategory.SKILL,
+        intent: 'duplicate-high-priority',
+        priority: 0,
+        questionText: 'Explain service boundaries.',
+      },
+      {
+        category: GeneratedQuestionCategory.SKILL,
+        intent: 'second',
+        priority: 2,
+        questionText: 'How do you manage retries?',
       },
     ]);
   });
@@ -437,6 +672,151 @@ describe('LlmAnalysisProcessor', () => {
     expect(promptBuilderService.buildPrompt).not.toHaveBeenCalled();
     expect(llmService.generateQuestions).not.toHaveBeenCalled();
   });
+
+  it.each([
+    {
+      purpose: 'file_selection',
+      run: async (): Promise<void> => {
+        await processor.selectFiles({
+          analysisRunId: 'run-1',
+          filePaths: ['src/main.ts'],
+        });
+      },
+      setup: (): void => {
+        promptTemplatesRepository.find.mockResolvedValue([]);
+      },
+    },
+    {
+      purpose: 'code_summary',
+      run: async (): Promise<void> => {
+        await processor.analyzeCode({
+          analysisRunId: 'run-1',
+          files: [{ content: 'export const app = true;', path: 'src/app.ts' }],
+        });
+      },
+      setup: (): void => {
+        promptTemplatesRepository.find.mockResolvedValue([]);
+      },
+    },
+    {
+      purpose: 'question_generation',
+      run: async (): Promise<void> => {
+        await processor.generateQuestions({
+          analysisRunId: 'run-1',
+        });
+      },
+      setup: (): void => {
+        codeAnalysisRepository.findOne.mockResolvedValue({
+          rawAnalysisReport: '{"summary":"overall"}',
+        } as CodeAnalysisEntity);
+        promptTemplatesRepository.find.mockResolvedValue([]);
+      },
+    },
+  ])(
+    'propagates $purpose not-found identifier when no active template is returned',
+    async ({ purpose, run, setup }) => {
+      setup();
+      promptBuilderService.buildPrompt.mockImplementation((input) => {
+        return new PromptBuilderService().buildPrompt(input);
+      });
+
+      await expect(run()).rejects.toThrow(
+        `${PROMPT_TEMPLATE_NOT_FOUND}: purpose=${purpose}`,
+      );
+      expect(promptTemplatesRepository.find).toHaveBeenCalledWith({
+        order: { version: 'DESC' },
+        where: {
+          isActive: true,
+          purpose,
+        },
+      });
+      expect(promptBuilderService.buildPrompt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          purpose,
+          templates: [],
+        }),
+      );
+    },
+  );
+
+  it.each([
+    {
+      purpose: 'file_selection',
+      run: async (): Promise<void> => {
+        await processor.selectFiles({
+          analysisRunId: 'run-1',
+          filePaths: ['src/main.ts'],
+        });
+      },
+      setup: (): void => {
+        promptTemplatesRepository.find.mockResolvedValue([
+          createPromptTemplateEntity('file_selection'),
+          { ...createPromptTemplateEntity('file_selection'), id: 2 },
+        ]);
+      },
+    },
+    {
+      purpose: 'code_summary',
+      run: async (): Promise<void> => {
+        await processor.analyzeCode({
+          analysisRunId: 'run-1',
+          files: [{ content: 'export const app = true;', path: 'src/app.ts' }],
+        });
+      },
+      setup: (): void => {
+        promptTemplatesRepository.find.mockResolvedValue([
+          createPromptTemplateEntity('code_summary'),
+          { ...createPromptTemplateEntity('code_summary'), id: 2 },
+        ]);
+      },
+    },
+    {
+      purpose: 'question_generation',
+      run: async (): Promise<void> => {
+        await processor.generateQuestions({
+          analysisRunId: 'run-1',
+        });
+      },
+      setup: (): void => {
+        codeAnalysisRepository.findOne.mockResolvedValue({
+          rawAnalysisReport: '{"summary":"overall"}',
+        } as CodeAnalysisEntity);
+        promptTemplatesRepository.find.mockResolvedValue([
+          createPromptTemplateEntity('question_generation'),
+          { ...createPromptTemplateEntity('question_generation'), id: 2 },
+        ]);
+      },
+    },
+  ])(
+    'propagates $purpose ambiguous identifier when multiple active templates are returned',
+    async ({ purpose, run, setup }) => {
+      setup();
+      promptBuilderService.buildPrompt.mockImplementation((input) => {
+        return new PromptBuilderService().buildPrompt(input);
+      });
+
+      await expect(run()).rejects.toThrow(
+        `${PROMPT_TEMPLATE_ACTIVE_AMBIGUOUS}: purpose=${purpose} count=2`,
+      );
+      expect(promptTemplatesRepository.find).toHaveBeenCalledWith({
+        order: { version: 'DESC' },
+        where: {
+          isActive: true,
+          purpose,
+        },
+      });
+      expect(promptBuilderService.buildPrompt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          purpose,
+          templates: expect.arrayContaining([
+            expect.objectContaining({
+              purpose,
+            }),
+          ]),
+        }),
+      );
+    },
+  );
 });
 
 function createAnalysisRunContextEntity(): AnalysisRunsEntity {

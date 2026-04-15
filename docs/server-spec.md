@@ -870,7 +870,7 @@ TypeOrmModule.forRootAsync({
 * `analysis_runs.status = FAILED`
 * `failure_reason` 저장
 * Redis lock 해제
-* 최대 2회 재시도 후 dead-letter 큐 이동
+* 재시도/dead-letter 소비 정책은 이번 Phase 4 범위에서 구현하지 않고 예약 토폴로지만 유지
 
 ---
 
@@ -880,8 +880,8 @@ TypeOrmModule.forRootAsync({
 
 * Exchange: `code-ray.analysis`
 * Queue: `analysis.run.requested` — 분석 요청 메시지 수신
-* Queue: `analysis.run.retry` — 실패 메시지 재시도 (최대 2회)
-* Queue: `analysis.run.deadletter` — 재시도 초과 메시지 격리
+* Queue: `analysis.run.retry` — 향후 운영 정책 확장을 위한 예약 큐
+* Queue: `analysis.run.deadletter` — 향후 운영 정책 확장을 위한 예약 큐
 
 > `question.generation.requested` 큐는 사용하지 않는다. 질문 생성은 `analysis-run.processor`가 내부적으로 `llm-analysis.processor`를 호출하여 처리하므로 별도 큐가 필요 없다.
 
@@ -899,8 +899,8 @@ TypeOrmModule.forRootAsync({
 
 ## 11.3 실패 정책
 
-* 최대 재시도 횟수: **2회** (`RABBITMQ_MAX_RETRY=2`)
-* 재시도 초과 시 `analysis.run.deadletter` 큐로 이동
+* 실제 재시도 횟수, dead-letter 이동 조건, 재처리 멱등성 규칙은 후속 Phase에서 확정
+* 이번 Phase 4에서는 `analysis.run.requested` 소비 실패 시 DB 상태를 `FAILED`로 기록하고 종료
 * 실패 사유는 `analysis_runs.failure_reason`에 반영
 * Redis lock은 실패 시에도 반드시 해제 (finally 블록 처리)
 

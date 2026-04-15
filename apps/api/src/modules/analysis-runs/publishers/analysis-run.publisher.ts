@@ -21,8 +21,8 @@ export class AnalysisRunPublisher {
     };
 
     await this.rabbitMqService.publish(
-      RABBITMQ_EXCHANGES.ANALYSIS_RUNS,
-      RABBITMQ_ROUTING_KEYS.ANALYSIS_RUN_REQUESTED,
+      RABBITMQ_EXCHANGES.ANALYSIS_REQUEST,
+      RABBITMQ_ROUTING_KEYS.ANALYSIS_REQUEST,
       payload,
     );
   }

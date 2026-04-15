@@ -44,41 +44,45 @@ describe('PromptBuilderService', () => {
     expect(result.template.purpose).toBe('file_selection');
   });
 
-  it('throws when no active template exists for the purpose', () => {
-    expect(() => {
-      service.buildPrompt({
-        purpose: 'code_summary',
-        templates: [
-          createTemplate({
-            isActive: false,
-            purpose: 'code_summary',
-          }),
-        ],
-        variables: {},
-      });
-    }).toThrow(
-      new PromptBuilderError(
-        `${PROMPT_TEMPLATE_NOT_FOUND}: purpose=code_summary`,
-      ),
-    );
-  });
+  it.each(['file_selection', 'code_summary', 'question_generation'] as const)(
+    'throws %s not-found identifier when no active template exists',
+    (purpose) => {
+      expect(() => {
+        service.buildPrompt({
+          purpose,
+          templates: [
+            createTemplate({
+              isActive: false,
+              purpose,
+            }),
+          ],
+          variables: {},
+        });
+      }).toThrow(
+        new PromptBuilderError(`${PROMPT_TEMPLATE_NOT_FOUND}: purpose=${purpose}`),
+      );
+    },
+  );
 
-  it('throws when multiple active templates exist for the purpose', () => {
-    expect(() => {
-      service.buildPrompt({
-        purpose: 'question_generation',
-        templates: [
-          createTemplate({ purpose: 'question_generation', templateKey: 'a' }),
-          createTemplate({ purpose: 'question_generation', templateKey: 'b' }),
-        ],
-        variables: {},
-      });
-    }).toThrow(
-      new PromptBuilderError(
-        `${PROMPT_TEMPLATE_ACTIVE_AMBIGUOUS}: purpose=question_generation count=2`,
-      ),
-    );
-  });
+  it.each(['file_selection', 'code_summary', 'question_generation'] as const)(
+    'throws %s ambiguous identifier when multiple active templates exist',
+    (purpose) => {
+      expect(() => {
+        service.buildPrompt({
+          purpose,
+          templates: [
+            createTemplate({ purpose, templateKey: 'a' }),
+            createTemplate({ purpose, templateKey: 'b' }),
+          ],
+          variables: {},
+        });
+      }).toThrow(
+        new PromptBuilderError(
+          `${PROMPT_TEMPLATE_ACTIVE_AMBIGUOUS}: purpose=${purpose} count=2`,
+        ),
+      );
+    },
+  );
 
   it('throws when a declared variable is missing', () => {
     expect(() => {

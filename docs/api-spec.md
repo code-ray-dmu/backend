@@ -38,6 +38,7 @@
 - `REPO_LIST`
 - `FOLDER_STRUCTURE`
 - `FILE_DETAIL`
+- `SUMMARY`
 - `QUESTION_GENERATION`
 
 ### Error Codes
@@ -987,9 +988,10 @@ refresh token으로 access token을 재발급한다.
 * `data`: object
   * `analysis_run_id`: string
   * `status`: string
-  * `current_stage`: string
-  * `started_at`: string
+  * `current_stage`: string | null
+  * `started_at`: string | null
   * `completed_at`: string | null
+  * `failure_reason`: string | null
 * `meta`: object
   * `request_id`: string
 * `error`: null
@@ -1003,7 +1005,8 @@ refresh token으로 access token을 재발급한다.
     "status": "IN_PROGRESS",
     "current_stage": "FILE_DETAIL",
     "started_at": "2026-04-08T15:10:00Z",
-    "completed_at": null
+    "completed_at": null,
+    "failure_reason": null
   },
   "meta": {
     "request_id": "6f1d7e14-6d74-4c74-97b1-6ef7a7df0041"
@@ -1056,11 +1059,11 @@ refresh token으로 access token을 재발급한다.
 없음
 
 #### Query Parameter
-- `applicantId`: string | null (optional)
+- `applicantId`: string (optional)
   - 지원자 ID 필터
-- `page`: number | null (optional)
+- `page`: number (optional)
   - 페이지 번호
-- `size`: number | null (optional)
+- `size`: number (optional)
   - 페이지 크기
 
 #### Body (JSON)
@@ -1084,6 +1087,15 @@ refresh token으로 access token을 재발급한다.
 
 * `data`: array
   * 분석 실행 목록
+  * 각 항목은 아래 필드를 포함한다.
+    * `analysis_run_id`: string
+    * `applicant_id`: string
+    * `repository_id`: string
+    * `status`: string
+    * `current_stage`: string | null
+    * `started_at`: string | null
+    * `completed_at`: string | null
+    * `failure_reason`: string | null
 * `meta`: object
   * `page`: number
   * `size`: number
@@ -1095,11 +1107,22 @@ refresh token으로 access token을 재발급한다.
 
 ```json
 {
-  "data": [],
+  "data": [
+    {
+      "analysis_run_id": "550e8400-e29b-41d4-a716-446655440040",
+      "applicant_id": "550e8400-e29b-41d4-a716-446655440020",
+      "repository_id": "550e8400-e29b-41d4-a716-446655440030",
+      "status": "IN_PROGRESS",
+      "current_stage": "FILE_DETAIL",
+      "started_at": "2026-04-08T15:10:00Z",
+      "completed_at": null,
+      "failure_reason": null
+    }
+  ],
   "meta": {
     "page": 1,
     "size": 20,
-    "total": 0,
+    "total": 1,
     "request_id": "6f1d7e14-6d74-4c74-97b1-6ef7a7df0042"
   },
   "error": null
@@ -1174,7 +1197,7 @@ refresh token으로 access token을 재발급한다.
 
 * `data`: object
   * `success`: boolean
-  * `analysisRunIds`: string[] — 생성된 분석 실행 ID 목록 (저장소당 1개)
+  * `analysisRunIds`: string[] — 큐 등록에 성공한 분석 실행 ID 목록 (저장소당 1개)
 * `meta`: object
   * `request_id`: string
 * `error`: null

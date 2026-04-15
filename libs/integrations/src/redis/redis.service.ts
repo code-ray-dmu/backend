@@ -23,6 +23,29 @@ export class RedisService implements OnModuleDestroy {
     return this.getClient().del(key);
   }
 
+  async expireIfValueMatches(
+    key: string,
+    expectedValue: string,
+    ttlSeconds: number,
+  ): Promise<boolean> {
+    const script = `
+      local current = redis.call('GET', KEYS[1])
+      if current == ARGV[1] then
+        return redis.call('EXPIRE', KEYS[1], ARGV[2])
+      end
+      return 0
+    `;
+    const result = await this.getClient().eval(
+      script,
+      1,
+      key,
+      expectedValue,
+      String(ttlSeconds),
+    );
+
+    return result === 1;
+  }
+
   async onModuleDestroy(): Promise<void> {
     if (this.client) {
       await this.client.quit();

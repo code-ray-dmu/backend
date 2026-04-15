@@ -37,27 +37,7 @@ export class AnalysisRunsService {
     applicantId: string,
     currentUserId: string,
   ): Promise<CreateAnalysisRunsResponseDto> {
-    const applicant = await this.applicantsRepository.findOne({
-      where: { id: applicantId },
-      relations: {
-        group: true,
-      },
-    });
-
-    if (!applicant) {
-      throw new NotFoundException({
-        code: 'APPLICANT_NOT_FOUND',
-        message: 'Applicant not found',
-      });
-    }
-
-    if (applicant.group.userId !== currentUserId) {
-      throw new ForbiddenException({
-        code: 'FORBIDDEN_RESOURCE_ACCESS',
-        message: 'You do not have access to this applicant',
-      });
-    }
-
+    const applicant = await this.getAuthorizedApplicant(applicantId, currentUserId);
     const repositories = await this.syncApplicantRepositories(applicant.id, applicant.githubUrl);
 
     if (repositories.length === 0) {
@@ -67,13 +47,7 @@ export class AnalysisRunsService {
       });
     }
 
-    const completedRepositoryIds = await this.analysisRunsRepository.findCompletedRepositoryIds(
-      applicant.id,
-      repositories.map((repository) => repository.id),
-    );
-    const pendingRepositories = repositories.filter(
-      (repository) => !completedRepositoryIds.has(repository.id),
-    );
+    const pendingRepositories = await this.getPendingRepositories(applicant.id, repositories);
 
     if (pendingRepositories.length === 0) {
       throw new ConflictException({
@@ -82,34 +56,11 @@ export class AnalysisRunsService {
       });
     }
 
-    const publishedAnalysisRunIds: string[] = [];
-
-    for (const repository of pendingRepositories) {
-      const analysisRun = await this.analysisRunsRepository.createQueuedRun(
-        applicant.id,
-        repository.id,
-        currentUserId,
-      );
-
-      try {
-        await this.analysisRunPublisher.publishRequested(analysisRun);
-        publishedAnalysisRunIds.push(analysisRun.id);
-      } catch (error) {
-        const failureReason =
-          error instanceof Error ? error.message : 'Failed to publish analysis run request';
-
-        await this.analysisRunsRepository.markFailedByIds([analysisRun.id], failureReason);
-
-        if (publishedAnalysisRunIds.length === 0) {
-          throw new InternalServerErrorException({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'Failed to enqueue analysis run',
-          });
-        }
-
-        break;
-      }
-    }
+    const publishedAnalysisRunIds = await this.enqueueAnalysisRuns(
+      applicant.id,
+      pendingRepositories,
+      currentUserId,
+    );
 
     return {
       success: true,
@@ -136,10 +87,10 @@ export class AnalysisRunsService {
     return {
       analysis_run_id: analysisRun.id,
       status: analysisRun.status,
-      current_stage: analysisRun.currentStage,
-      started_at: analysisRun.startedAt,
-      completed_at: analysisRun.completedAt,
-      failure_reason: analysisRun.failureReason,
+      current_stage: analysisRun.currentStage ?? null,
+      started_at: analysisRun.startedAt ?? null,
+      completed_at: analysisRun.completedAt ?? null,
+      failure_reason: analysisRun.failureReason ?? null,
     };
   }
 
@@ -164,10 +115,10 @@ export class AnalysisRunsService {
         applicant_id: analysisRun.applicantId,
         repository_id: analysisRun.repositoryId,
         status: analysisRun.status,
-        current_stage: analysisRun.currentStage,
-        started_at: analysisRun.startedAt,
-        completed_at: analysisRun.completedAt,
-        failure_reason: analysisRun.failureReason,
+        current_stage: analysisRun.currentStage ?? null,
+        started_at: analysisRun.startedAt ?? null,
+        completed_at: analysisRun.completedAt ?? null,
+        failure_reason: analysisRun.failureReason ?? null,
       })),
       meta: {
         page,
@@ -217,6 +168,81 @@ export class AnalysisRunsService {
     return repoFullNames
       .map((repoFullName) => savedRepositoryMap.get(repoFullName))
       .filter((repository): repository is ApplicantRepositoriesEntity => Boolean(repository));
+  }
+
+  private async getAuthorizedApplicant(
+    applicantId: string,
+    currentUserId: string,
+  ): Promise<ApplicantsEntity> {
+    const applicant = await this.applicantsRepository.findOne({
+      where: { id: applicantId },
+      relations: {
+        group: true,
+      },
+    });
+
+    if (!applicant) {
+      throw new NotFoundException({
+        code: 'APPLICANT_NOT_FOUND',
+        message: 'Applicant not found',
+      });
+    }
+
+    if (applicant.group.userId !== currentUserId) {
+      throw new ForbiddenException({
+        code: 'FORBIDDEN_RESOURCE_ACCESS',
+        message: 'You do not have access to this applicant',
+      });
+    }
+
+    return applicant;
+  }
+
+  private async getPendingRepositories(
+    applicantId: string,
+    repositories: ApplicantRepositoriesEntity[],
+  ): Promise<ApplicantRepositoriesEntity[]> {
+    const completedRepositoryIds = await this.analysisRunsRepository.findCompletedRepositoryIds(
+      applicantId,
+      repositories.map((repository) => repository.id),
+    );
+
+    return repositories.filter((repository) => !completedRepositoryIds.has(repository.id));
+  }
+
+  private async enqueueAnalysisRuns(
+    applicantId: string,
+    repositories: ApplicantRepositoriesEntity[],
+    currentUserId: string,
+  ): Promise<string[]> {
+    const publishedAnalysisRunIds: string[] = [];
+
+    for (const repository of repositories) {
+      const analysisRun = await this.analysisRunsRepository.createQueuedRun(
+        applicantId,
+        repository.id,
+        currentUserId,
+      );
+
+      try {
+        await this.analysisRunPublisher.publishRequested(analysisRun);
+        publishedAnalysisRunIds.push(analysisRun.id);
+      } catch (error) {
+        const failureReason =
+          error instanceof Error ? error.message : 'Failed to publish analysis run request';
+
+        await this.analysisRunsRepository.markFailedByIds([analysisRun.id], failureReason);
+      }
+    }
+
+    if (publishedAnalysisRunIds.length === 0) {
+      throw new InternalServerErrorException({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to enqueue analysis run',
+      });
+    }
+
+    return publishedAnalysisRunIds;
   }
 
   private parseOwnerFromGithubUrl(githubUrl: string): string {
