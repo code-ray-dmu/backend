@@ -3,12 +3,14 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/filters';
+import { ApiResponseEnvelopeInterceptor } from './common/interceptors';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('v1');
   app.useGlobalFilters(new ApiExceptionFilter());
+  app.useGlobalInterceptors(new ApiResponseEnvelopeInterceptor());
 
   app.useGlobalPipes(
     new ValidationPipe({
