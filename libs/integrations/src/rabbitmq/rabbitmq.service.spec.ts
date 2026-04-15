@@ -65,35 +65,35 @@ describe('RabbitMqService', () => {
     publish.mockReturnValue(true);
 
     await service.publish(
-      RABBITMQ_EXCHANGES.ANALYSIS_RUNS,
-      RABBITMQ_ROUTING_KEYS.ANALYSIS_RUN_REQUESTED,
+      RABBITMQ_EXCHANGES.ANALYSIS_REQUEST,
+      RABBITMQ_ROUTING_KEYS.ANALYSIS_REQUEST,
       { analysisRunId: 'run-1' },
     );
 
-    expect(assertExchange).toHaveBeenCalledWith(RABBITMQ_EXCHANGES.ANALYSIS_RUNS, 'topic', {
+    expect(assertExchange).toHaveBeenCalledWith(RABBITMQ_EXCHANGES.ANALYSIS_REQUEST, 'topic', {
       durable: true,
     });
-    expect(assertQueue).toHaveBeenCalledWith(RABBITMQ_QUEUES.ANALYSIS_REQUESTS, {
+    expect(assertQueue).toHaveBeenCalledWith(RABBITMQ_QUEUES.ANALYSIS_REQUEST, {
       durable: true,
-      deadLetterExchange: RABBITMQ_EXCHANGES.ANALYSIS_RUNS,
-      deadLetterRoutingKey: RABBITMQ_ROUTING_KEYS.ANALYSIS_RUN_RETRY,
+      deadLetterExchange: RABBITMQ_EXCHANGES.ANALYSIS_REQUEST,
+      deadLetterRoutingKey: RABBITMQ_ROUTING_KEYS.PHASE4_ANALYSIS_RETRY,
     });
-    expect(assertQueue).toHaveBeenCalledWith(RABBITMQ_QUEUES.ANALYSIS_RETRY, {
+    expect(assertQueue).toHaveBeenCalledWith(RABBITMQ_QUEUES.PHASE4_ANALYSIS_RETRY, {
       durable: true,
-      deadLetterExchange: RABBITMQ_EXCHANGES.ANALYSIS_RUNS,
-      deadLetterRoutingKey: RABBITMQ_ROUTING_KEYS.ANALYSIS_RUN_DEAD_LETTER,
+      deadLetterExchange: RABBITMQ_EXCHANGES.ANALYSIS_REQUEST,
+      deadLetterRoutingKey: RABBITMQ_ROUTING_KEYS.PHASE4_ANALYSIS_DEAD_LETTER,
     });
-    expect(assertQueue).toHaveBeenCalledWith(RABBITMQ_QUEUES.ANALYSIS_DEAD_LETTER, {
+    expect(assertQueue).toHaveBeenCalledWith(RABBITMQ_QUEUES.PHASE4_ANALYSIS_DEAD_LETTER, {
       durable: true,
     });
     expect(bindQueue).toHaveBeenCalledWith(
-      RABBITMQ_QUEUES.ANALYSIS_REQUESTS,
-      RABBITMQ_EXCHANGES.ANALYSIS_RUNS,
-      RABBITMQ_ROUTING_KEYS.ANALYSIS_RUN_REQUESTED,
+      RABBITMQ_QUEUES.ANALYSIS_REQUEST,
+      RABBITMQ_EXCHANGES.ANALYSIS_REQUEST,
+      RABBITMQ_ROUTING_KEYS.ANALYSIS_REQUEST,
     );
     expect(publish).toHaveBeenCalledWith(
-      RABBITMQ_EXCHANGES.ANALYSIS_RUNS,
-      RABBITMQ_ROUTING_KEYS.ANALYSIS_RUN_REQUESTED,
+      RABBITMQ_EXCHANGES.ANALYSIS_REQUEST,
+      RABBITMQ_ROUTING_KEYS.ANALYSIS_REQUEST,
       expect.any(Buffer),
       {
         contentType: 'application/json',
@@ -117,9 +117,9 @@ describe('RabbitMqService', () => {
     const handler = jest.fn().mockResolvedValue(undefined);
 
     await service.consume(
-      RABBITMQ_QUEUES.ANALYSIS_REQUESTS,
-      RABBITMQ_EXCHANGES.ANALYSIS_RUNS,
-      RABBITMQ_ROUTING_KEYS.ANALYSIS_RUN_REQUESTED,
+      RABBITMQ_QUEUES.ANALYSIS_REQUEST,
+      RABBITMQ_EXCHANGES.ANALYSIS_REQUEST,
+      RABBITMQ_ROUTING_KEYS.ANALYSIS_REQUEST,
       handler,
     );
 

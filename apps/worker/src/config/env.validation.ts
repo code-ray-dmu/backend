@@ -32,4 +32,7 @@ export const envValidationSchema = Joi.object({
     .default(3),
 
   ANALYSIS_LOCK_TTL: Joi.number().integer().min(1).default(600),
+  ANALYSIS_CLEANUP_INTERVAL_SECONDS: Joi.number().integer().min(1).default(300),
+  ANALYSIS_STALE_RUN_THRESHOLD_SECONDS: Joi.number().integer().min(60).default(1800),
+  ANALYSIS_CLEANUP_BATCH_SIZE: Joi.number().integer().min(1).max(500).default(50),
 });

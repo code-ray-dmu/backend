@@ -1,15 +1,17 @@
 export const RABBITMQ_EXCHANGES = {
-  ANALYSIS_RUNS: 'code-ray.analysis',
+  ANALYSIS_REQUEST: 'code-ray.analysis',
 } as const;
 
 export const RABBITMQ_QUEUES = {
-  ANALYSIS_REQUESTS: 'analysis.run.requested',
-  ANALYSIS_RETRY: 'analysis.run.retry',
-  ANALYSIS_DEAD_LETTER: 'analysis.run.deadletter',
+  ANALYSIS_REQUEST: 'analysis.run.requested',
+  // Phase 4 retry/dead-letter 운영 정책에서 사용 예정
+  PHASE4_ANALYSIS_RETRY: 'analysis.run.retry',
+  PHASE4_ANALYSIS_DEAD_LETTER: 'analysis.run.deadletter',
 } as const;
 
 export const RABBITMQ_ROUTING_KEYS = {
-  ANALYSIS_RUN_REQUESTED: 'analysis.run.requested',
-  ANALYSIS_RUN_RETRY: 'analysis.run.retry',
-  ANALYSIS_RUN_DEAD_LETTER: 'analysis.run.deadletter',
+  ANALYSIS_REQUEST: 'analysis.run.requested',
+  // Phase 4 retry/dead-letter 운영 정책에서 사용 예정
+  PHASE4_ANALYSIS_RETRY: 'analysis.run.retry',
+  PHASE4_ANALYSIS_DEAD_LETTER: 'analysis.run.deadletter',
 } as const;

@@ -145,7 +145,7 @@ export class LlmAnalysisProcessor {
         analysisRunId: input.analysisRunId,
         applicantId: context.analysisRun.applicantId,
         id: existingCodeAnalysis?.id,
-        rawAnalysisReport: response.content.trim(),
+        rawAnalysisReport: response.content,
       }),
     );
 
@@ -199,9 +199,12 @@ export class LlmAnalysisProcessor {
 
     const parsedQuestions = this.llmParserService.parseGeneratedQuestions({
       content: response.content,
-      maxQuestionsPerAnalysisRun,
+      maxQuestionsPerAnalysisRun: Number.MAX_SAFE_INTEGER,
     });
-    const normalizedQuestions = this.deduplicateQuestions(parsedQuestions);
+    const normalizedQuestions = this.normalizeQuestionsForPersistence(
+      parsedQuestions,
+      maxQuestionsPerAnalysisRun,
+    );
 
     await this.generatedQuestionsRepository.manager.transaction(
       async (entityManager) => {
@@ -250,20 +253,24 @@ export class LlmAnalysisProcessor {
     }).prompt;
   }
 
-  private deduplicateQuestions(
+  private normalizeQuestionsForPersistence(
     questions: GeneratedQuestionDraft[],
+    maxQuestionsPerAnalysisRun: number,
   ): GeneratedQuestionDraft[] {
     const normalizedQuestions = new Map<string, GeneratedQuestionDraft>();
 
     for (const question of questions) {
       const dedupeKey = question.questionText.trim().toLocaleLowerCase();
+      const existingQuestion = normalizedQuestions.get(dedupeKey);
 
-      if (!normalizedQuestions.has(dedupeKey)) {
+      if (!existingQuestion || question.priority < existingQuestion.priority) {
         normalizedQuestions.set(dedupeKey, question);
       }
     }
 
-    return [...normalizedQuestions.values()];
+    return [...normalizedQuestions.values()]
+      .sort((left, right) => left.priority - right.priority)
+      .slice(0, maxQuestionsPerAnalysisRun);
   }
 
   private formatFileContents(files: AnalyzeCodeFileInput[]): string {

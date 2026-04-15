@@ -28,6 +28,9 @@ export default (): {
     lockTtl: number;
     maxAnalysisFiles: number;
     maxQuestionsPerAnalysisRun: number;
+    cleanupIntervalSeconds: number;
+    staleRunThresholdSeconds: number;
+    cleanupBatchSize: number;
   };
 } => ({
   nodeEnv: process.env.NODE_ENV ?? 'local',
@@ -68,5 +71,14 @@ export default (): {
       process.env.MAX_QUESTIONS_PER_ANALYSIS_RUN ?? '3',
       10,
     ),
+    cleanupIntervalSeconds: parseInt(
+      process.env.ANALYSIS_CLEANUP_INTERVAL_SECONDS ?? '300',
+      10,
+    ),
+    staleRunThresholdSeconds: parseInt(
+      process.env.ANALYSIS_STALE_RUN_THRESHOLD_SECONDS ?? '1800',
+      10,
+    ),
+    cleanupBatchSize: parseInt(process.env.ANALYSIS_CLEANUP_BATCH_SIZE ?? '50', 10),
   },
 });
