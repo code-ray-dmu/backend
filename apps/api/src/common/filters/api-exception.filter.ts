@@ -47,8 +47,18 @@ export class ApiExceptionFilter implements ExceptionFilter {
     }
 
     if (exception instanceof UnauthorizedException) {
+      const status = exception.getStatus();
+      const error = this.getHttpExceptionError(exception, status);
+
+      if (error.code !== 'UNAUTHORIZED') {
+        return {
+          status,
+          error,
+        };
+      }
+
       return {
-        status: exception.getStatus(),
+        status,
         error: {
           code: 'UNAUTHORIZED',
           message: 'Authentication required',

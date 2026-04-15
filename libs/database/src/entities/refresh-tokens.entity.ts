@@ -1,8 +1,9 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { UsersEntity } from './users.entity';
 
 @Entity('refresh_tokens')
+@Index('IDX_refresh_tokens_token_value', ['tokenValue'], { unique: true })
 export class RefreshTokensEntity {
   @PrimaryGeneratedColumn()
     id: number;

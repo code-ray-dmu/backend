@@ -1,14 +1,31 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ApplicantsEntity } from '@app/database';
+import { ApiExceptionFilter } from '../../common/filters';
+import { ApiResponseEnvelopeInterceptor } from '../../common/interceptors';
 import { AnalysisRunsModule } from '../analysis-runs/analysis-runs.module';
-import { ApplicantsRepository } from './repositories/applicants.repository';
+import { AuthModule } from '../auth/auth.module';
+import { GroupsModule } from '../groups/groups.module';
 import { ApplicantsController } from './applicants.controller';
 import { ApplicantsFacade } from './applicants.facade';
+import { ApplicantsRepository } from './repositories/applicants.repository';
 import { ApplicantsService } from './applicants.service';
 
 @Module({
-  imports: [AnalysisRunsModule],
+  imports: [
+    TypeOrmModule.forFeature([ApplicantsEntity]),
+    AuthModule,
+    GroupsModule,
+    AnalysisRunsModule,
+  ],
   controllers: [ApplicantsController],
-  providers: [ApplicantsService, ApplicantsFacade, ApplicantsRepository],
+  providers: [
+    ApiExceptionFilter,
+    ApiResponseEnvelopeInterceptor,
+    ApplicantsService,
+    ApplicantsFacade,
+    ApplicantsRepository,
+  ],
   exports: [ApplicantsService, ApplicantsFacade, ApplicantsRepository],
 })
 export class ApplicantsModule {}

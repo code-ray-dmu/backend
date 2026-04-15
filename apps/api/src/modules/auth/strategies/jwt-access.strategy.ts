@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -10,12 +10,24 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey:
-        configService.get<string>('jwt.accessSecret') ?? 'jwt-access-secret-stub',
+      secretOrKey: getRequiredJwtConfig(configService, 'jwt.accessSecret'),
     });
   }
 
   validate(payload: JwtPayload): JwtPayload {
     return payload;
   }
+}
+
+function getRequiredJwtConfig(configService: ConfigService, key: string): string {
+  const value = configService.get<string>(key);
+
+  if (!value) {
+    throw new InternalServerErrorException({
+      code: 'INTERNAL_SERVER_ERROR',
+      message: `${key} is not configured`,
+    });
+  }
+
+  return value;
 }
