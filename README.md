@@ -64,7 +64,7 @@ pm2 install pm2-logrotate
 
 
 
-```markdown
+
 ## 🏗 Backend Architecture
 
 `code-ray-server`는 **API 서버**와 **Worker 서버**를 분리한 비동기 분석 시스템입니다.
