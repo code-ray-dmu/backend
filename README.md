@@ -83,23 +83,21 @@ pm2 install pm2-logrotate
 │  API App   │
 │ apps/api   │
 └─────┬──────┘
-      │ Publish Job
-      ▼
-┌────────────┐
-│  RabbitMQ  │
-└─────┬──────┘
-      │ Consume Job
-      ▼
-┌────────────┐
-│ Worker App │
-│ apps/worker│
-└─────┬──────┘
       │
+      ├──────────▶ PostgreSQL
       ├──────────▶ GitHub API
-      ├──────────▶ LLM
-      ├──────────▶ Redis
-      └──────────▶ PostgreSQL
-```
+      └──────────▶ RabbitMQ
+                    │
+                    ▼
+              ┌────────────┐
+              │ Worker App │
+              │ apps/worker│
+              └─────┬──────┘
+                    │
+                    ├──────────▶ GitHub API
+                    ├──────────▶ LLM
+                    ├──────────▶ Redis
+                    └──────────▶ PostgreSQL
 
 ---
 
@@ -112,7 +110,7 @@ pm2 install pm2-logrotate
 | **PostgreSQL** | 영속 데이터 저장 | 사용자, 지원자, 분석 상태, 분석 결과, 생성된 질문을 저장합니다. |
 | **RabbitMQ** | 작업 큐 | API와 Worker를 분리하고 분석 요청을 비동기로 전달합니다. |
 | **Redis** | 캐시 / Lock | GitHub 응답 캐싱, 동일 저장소 중복 분석 방지, 진행 상태 임시 저장에 사용합니다. |
-| **GitHub API** | 코드 수집 | 지원자의 공개 저장소, 파일 트리, 핵심 파일 원문을 가져옵니다. |
+| **GitHub API** | 저장소 정보와 파일 조회 | API App은 공개 저장소 목록을 조회하고, Worker App은 파일 트리와 핵심 파일 원문을 조회합니다. |
 | **LLM** | 코드 분석 / 질문 생성 | 코드 요약, 핵심 파일 선별, 면접 질문 생성을 수행합니다. |
 
 ---
