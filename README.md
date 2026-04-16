@@ -296,8 +296,8 @@ LLM 응답은 structured output을 기준으로 처리하며, 파싱 실패 시 
 
 ## Documentation
 
-- [Server Spec](docs/server-spec.md)
-- [Tech Spec](docs/tech-spec.md)
-- [API Spec](docs/api-spec.md)
-- [ERD](docs/erd.md)
+- [Server Spec](docs/server-spec.md): 프로젝트 구조, 기술 스택, 모듈 책임
+- [Tech Spec](docs/tech-spec.md): 구현 흐름, 상태 전이, 비동기 분석 파이프라인
+- [API Spec](docs/api-spec.md): API 엔드포인트, 인증 정책, 요청/응답 형식
+- [ERD](docs/erd.md): 데이터 모델과 엔티티 관계
 
