@@ -62,9 +62,6 @@ pm2 install pm2-logrotate
 ```
 
 
-
-
-
 ## 🏗 Backend Architecture
 
 `code-ray-server`는 **API 서버**와 **Worker 서버**를 분리한 비동기 분석 시스템입니다.
@@ -73,32 +70,37 @@ pm2 install pm2-logrotate
 - Worker 서버는 큐에 쌓인 작업을 가져와 GitHub 코드 수집, LLM 분석, 질문 생성을 수행합니다.
 - PostgreSQL은 결과와 상태를 저장하고, Redis는 캐시와 Lock을 담당합니다.
 
-```text
-┌────────────┐
-│  Client    │
-└─────┬──────┘
-      │ HTTP
-      ▼
-┌────────────┐
-│  API App   │
-│ apps/api   │
-└─────┬──────┘
-      │
-      ├──────────▶ PostgreSQL
-      ├──────────▶ GitHub API
-      └──────────▶ RabbitMQ
-                    │
-                    ▼
-              ┌────────────┐
-              │ Worker App │
-              │ apps/worker│
-              └─────┬──────┘
-                    │
-                    ├──────────▶ GitHub API
-                    ├──────────▶ LLM
-                    ├──────────▶ Redis
-                    └──────────▶ PostgreSQL
+## 🔄 System Flow
+
+```mermaid
+flowchart LR
+    C["Client"]
+    API["API App<br/>(NestJS)"]
+    MQ["RabbitMQ"]
+    W["Worker App<br/>(NestJS)"]
+
+    DB["PostgreSQL"]
+    R["Redis"]
+    GH["GitHub API"]
+    LLM["LLM Provider"]
+
+    C -->|"HTTP 요청"| API
+    API -->|"응답 반환"| C
+    C -->|"상태 폴링"| API
+
+    API -->|"인증/인가<br/>조회/등록"| DB
+    API -->|"analysis run 상태<br/>질문 조회"| DB
+    API -->|"공개 저장소 목록 조회<br/>저장소 자동 선택"| GH
+    API -->|"분석 요청 메시지 발행"| MQ
+
+    MQ -->|"analysis.run.requested consume"| W
+
+    W -->|"분석 결과 저장"| DB
+    W -->|"중복 실행 방지 lock<br/>진행률 캐시"| R
+    W -->|"저장소 메타데이터<br/>파일 트리<br/>파일 내용 조회"| GH
+    W -->|"핵심 파일 선별<br/>코드 요약<br/>질문 생성"| LLM
 ```
+
 ---
 
 ## 🔧 Components
@@ -109,7 +111,7 @@ pm2 install pm2-logrotate
 | **Worker App** | 분석 파이프라인 실행 | 시간이 오래 걸리는 GitHub 조회, LLM 호출, 결과 저장을 백그라운드에서 처리합니다. |
 | **PostgreSQL** | 영속 데이터 저장 | 사용자, 지원자, 분석 상태, 분석 결과, 생성된 질문을 저장합니다. |
 | **RabbitMQ** | 작업 큐 | API와 Worker를 분리하고 분석 요청을 비동기로 전달합니다. |
-| **Redis** | 캐시 / Lock | GitHub 응답 캐싱, 동일 저장소 중복 분석 방지, 진행 상태 임시 저장에 사용합니다. |
+| **Redis** | 캐시 / Lock | GitHub 응답 캐싱, 동일 저장소 중복 분석 방지, 진행 상태 임시 캐시에 사용합니다. |
 | **GitHub API** | 저장소 정보와 파일 조회 | API App은 공개 저장소 목록을 조회하고, Worker App은 파일 트리와 핵심 파일 원문을 조회합니다. |
 | **LLM** | 코드 분석 / 질문 생성 | 코드 요약, 핵심 파일 선별, 면접 질문 생성을 수행합니다. |
 
@@ -208,7 +210,7 @@ libs/
 | `github:repo:{repoFullName}` | GitHub 저장소 정보 캐시 |
 | `github:tree:{repoFullName}:{branch}` | GitHub 파일 트리 캐시 |
 | `analysis:lock:{repositoryId}` | 동일 저장소 동시 분석 방지 |
-| `analysis:progress:{analysisRunId}` | 분석 진행 상태 임시 캐시 |
+| `analysis:progress:{analysisRunId}` | 분석 진행 상태 임시 캐시, 설계 제안 |
 
 ### RabbitMQ
 
@@ -218,7 +220,7 @@ libs/
 | --- | --- |
 | Analysis request | API App이 분석 요청 메시지를 발행합니다. |
 | Worker consume | Worker App이 메시지를 소비하고 분석을 실행합니다. |
-| Retry / Dead-letter | 후속 단계에서 재시도 및 실패 메시지 처리를 확장할 수 있습니다. |
+| Retry / Dead-letter | 후속 Phase에서 재시도 및 실패 메시지 처리 정책을 확정할 예정입니다. |
 
 ---
 
@@ -288,6 +290,14 @@ LLM 응답은 structured output을 기준으로 처리하며, 파싱 실패 시 
 | Worker App | 분석 파이프라인 실행 |
 | GitHub API | 코드 수집 |
 | LLM | 코드 분석 및 질문 생성 |
-| Redis | 캐시, Lock, 진행 상태 |
+| Redis | 캐시, Lock, 진행 상태 임시 캐시 |
 | PostgreSQL | 상태와 결과 저장 |
-```
+
+
+## Documentation
+
+- [Server Spec](docs/server-spec.md)
+- [Tech Spec](docs/tech-spec.md)
+- [API Spec](docs/api-spec.md)
+- [ERD](docs/erd.md)
+
