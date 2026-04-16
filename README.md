@@ -98,7 +98,7 @@ pm2 install pm2-logrotate
                     ├──────────▶ LLM
                     ├──────────▶ Redis
                     └──────────▶ PostgreSQL
-
+```
 ---
 
 ## 🔧 Components
