@@ -1,68 +1,6 @@
 # code-ray-server
 
-NestJS monorepo skeleton for the Code Ray backend.
-
-## Local Development
-
-```bash
-cp .env.local.example .env.local
-docker compose --env-file .env.local up --build
-```
-
-The local compose stack starts `postgres`, `redis`, `rabbitmq`, `migrator`, `api`, and `worker`.
-
-```bash
-docker compose --env-file .env.local config
-docker compose --env-file .env.local down -v
-```
-
-`docker/postgres/init/20-seed-prompt-templates.sql` only runs when the Postgres volume is created from an empty state. Reusing the existing volume does not re-seed prompt templates.
-
-For host-based app execution without Docker for the Nest apps, keep `.env.local` values pointed at `localhost` and run:
-
-```bash
-npm install
-npm run migration:run
-npm run start:api:dev
-npm run start:worker:dev
-```
-
-## Production Runtime
-
-PM2 runs on the host, not inside Docker Compose.
-
-```bash
-cp .env.production.example .env.production
-npm install
-npm run build
-npm run migration:run
-pm2 start ecosystem.config.js
-```
-
-Useful commands:
-
-```bash
-pm2 list
-pm2 logs
-pm2 restart ecosystem.config.js
-pm2 stop ecosystem.config.js
-```
-
-Recommended production prerequisites:
-
-- Node.js 20
-- PM2 installed globally
-- `.env.production` placed in the repository root
-- reachable PostgreSQL, Redis, and RabbitMQ endpoints
-
-Optional log rotation:
-
-```bash
-pm2 install pm2-logrotate
-```
-
-
-## 🏗 Backend Architecture
+## Backend Architecture
 
 `code-ray-server`는 **API 서버**와 **Worker 서버**를 분리한 비동기 분석 시스템입니다.
 
@@ -70,7 +8,7 @@ pm2 install pm2-logrotate
 - Worker 서버는 큐에 쌓인 작업을 가져와 GitHub 코드 수집, LLM 분석, 질문 생성을 수행합니다.
 - PostgreSQL은 결과와 상태를 저장하고, Redis는 캐시와 Lock을 담당합니다.
 
-## 🔄 System Flow
+## System Flow
 
 ```mermaid
 flowchart LR
@@ -103,7 +41,7 @@ flowchart LR
 
 ---
 
-## 🔧 Components
+## Components
 
 | Component | Role | Why It Exists |
 | --- | --- | --- |
@@ -117,7 +55,7 @@ flowchart LR
 
 ---
 
-## 📦 Monorepo Structure
+## Monorepo Structure
 
 ```text
 apps/
@@ -146,7 +84,7 @@ libs/
 
 ---
 
-## 🔄 Analysis Flow
+## Analysis Flow
 
 ```text
 1. 지원자 등록
@@ -182,7 +120,7 @@ libs/
 
 ---
 
-## 🗄 Data Storage
+## Data Storage
 
 ### PostgreSQL
 
@@ -210,7 +148,7 @@ libs/
 | `github:repo:{repoFullName}` | GitHub 저장소 정보 캐시 |
 | `github:tree:{repoFullName}:{branch}` | GitHub 파일 트리 캐시 |
 | `analysis:lock:{repositoryId}` | 동일 저장소 동시 분석 방지 |
-| `analysis:progress:{analysisRunId}` | 분석 진행 상태 임시 캐시, 설계 제안 |
+| `analysis:progress:{analysisRunId}` | 분석 진행 상태 임시 캐시 |
 
 ### RabbitMQ
 
@@ -220,11 +158,11 @@ libs/
 | --- | --- |
 | Analysis request | API App이 분석 요청 메시지를 발행합니다. |
 | Worker consume | Worker App이 메시지를 소비하고 분석을 실행합니다. |
-| Retry / Dead-letter | 후속 Phase에서 재시도 및 실패 메시지 처리 정책을 확정할 예정입니다. |
+| Retry / Dead-letter | 실패 메시지를 일정 횟수 재시도 처리합니다. |
 
 ---
 
-## 🤖 External Integrations
+## External Integrations
 
 ### GitHub API
 
@@ -250,7 +188,7 @@ LLM 응답은 structured output을 기준으로 처리하며, 파싱 실패 시 
 
 ---
 
-## 🧭 Analysis Status
+## Analysis Status
 
 분석은 `analysis_runs` 단위로 관리됩니다.
 
@@ -265,7 +203,7 @@ LLM 응답은 structured output을 기준으로 처리하며, 파싱 실패 시 
 
 ---
 
-## ⚙️ Key Constraints
+## Key Constraints
 
 | Constraint | Value |
 | --- | --- |
@@ -280,7 +218,7 @@ LLM 응답은 structured output을 기준으로 처리하며, 파싱 실패 시 
 
 ---
 
-## 🧩 Design Summary
+## Design Summary
 
 | Layer | Responsibility |
 | --- | --- |
@@ -294,10 +232,4 @@ LLM 응답은 structured output을 기준으로 처리하며, 파싱 실패 시 
 | PostgreSQL | 상태와 결과 저장 |
 
 
-## Documentation
-
-- [Server Spec](docs/server-spec.md): 프로젝트 구조, 기술 스택, 모듈 책임
-- [Tech Spec](docs/tech-spec.md): 구현 흐름, 상태 전이, 비동기 분석 파이프라인
-- [API Spec](docs/api-spec.md): API 엔드포인트, 인증 정책, 요청/응답 형식
-- [ERD](docs/erd.md): 데이터 모델과 엔티티 관계
 
